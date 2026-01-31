@@ -24,6 +24,11 @@ button {
   border: none;
   border-radius: 6px;
   cursor: pointer;
+  transition: transform 0.1s;
+}
+
+button:hover {
+  transform: scale(1.05);
 }
 
 #detector { display: none; }
@@ -41,11 +46,18 @@ button {
   height: 100%;
   width: 0%;
   background: linear-gradient(to right, blue, yellow, red);
+  transition: width 0.3s;
 }
 
 #arrow {
   font-size: 60px;
   margin: 20px;
+  transition: transform 0.3s ease-out;
+}
+
+.small {
+  font-size: 14px;
+  opacity: 0.8;
 }
 </style>
 </head>
@@ -111,12 +123,11 @@ function selectZone(zone) {
   locationsDiv.style.display = "none";
   detectorDiv.style.display = "block";
   statusEl.innerText = "Requesting GPS…";
-
   startGPS();
 }
 
 // ===============================
-// START GPS WITH PERMISSION PROMPT
+// START GPS
 // ===============================
 function startGPS() {
   if (!navigator.geolocation) {
@@ -124,11 +135,10 @@ function startGPS() {
     return;
   }
 
+  // Request permission first
   navigator.geolocation.getCurrentPosition(
     pos => {
       positionUpdate(pos);
-
-      // Start continuous tracking after permission granted
       gpsWatchId = navigator.geolocation.watchPosition(
         positionUpdate,
         gpsError,
@@ -145,43 +155,44 @@ function startGPS() {
 // ===============================
 function positionUpdate(pos) {
   currentPosition = { lat: pos.coords.latitude, lng: pos.coords.longitude };
-
-  const distance = getDistance(
-    currentPosition.lat,
-    currentPosition.lng,
-    selectedZone.lat,
-    selectedZone.lng
-  );
+  const distance = getDistance(currentPosition.lat, currentPosition.lng, selectedZone.lat, selectedZone.lng);
 
   distanceEl.innerText = `Distance: ${Math.round(distance)} m`;
   updateDetector(distance);
 }
 
 // ===============================
-// HOT / COLD LOGIC
+// HOT / COLD DETECTOR
 // ===============================
 function updateDetector(distance) {
   const heat = Math.max(0, 100 - distance);
   hotFill.style.width = Math.min(100, heat) + "%";
 
-  if (distance < 10) statusEl.innerText = "🔥 STRONG SIGNAL — SEARCH AREA";
-  else if (distance < 50) statusEl.innerText = "Signal increasing…";
-  else statusEl.innerText = "Scanning…";
+  if (distance < 10) {
+    statusEl.innerText = "🔥 STRONG SIGNAL — SEARCH AREA";
+    hotFill.style.background = "linear-gradient(to right, orange, red, darkred)";
+  } else if (distance < 50) {
+    statusEl.innerText = "Signal increasing…";
+    hotFill.style.background = "linear-gradient(to right, blue, yellow, orange)";
+  } else {
+    statusEl.innerText = "Scanning…";
+    hotFill.style.background = "linear-gradient(to right, blue, cyan)";
+  }
 }
 
 // ===============================
-// CORRECT HAVERSINE DISTANCE
+// DISTANCE CALCULATION
 // ===============================
 function getDistance(lat1, lon1, lat2, lon2) {
   const R = 6371000; // meters
   const φ1 = lat1 * Math.PI / 180;
   const φ2 = lat2 * Math.PI / 180;
-  const Δφ = (lat2 - lat1) * Math.PI / 180;
   const Δλ = (lon2 - lon1) * Math.PI / 180;
 
-  const a = Math.sin(Δφ/2)**2 + Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ/2)**2;
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-  return R * c;
+  return R * Math.acos(
+    Math.sin(φ1) * Math.sin(φ2) +
+    Math.cos(φ1) * Math.cos(φ2) * Math.cos(Δλ)
+  );
 }
 
 // ===============================
@@ -189,22 +200,18 @@ function getDistance(lat1, lon1, lat2, lon2) {
 // ===============================
 window.addEventListener("deviceorientation", e => {
   if (!currentPosition || e.alpha === null) return;
+
   const heading = e.alpha;
-  const bearing = calculateBearing(
-    currentPosition.lat, currentPosition.lng,
-    selectedZone.lat, selectedZone.lng
-  );
+  const bearing = calculateBearing(currentPosition.lat, currentPosition.lng, selectedZone.lat, selectedZone.lng);
+
   arrow.style.transform = `rotate(${bearing - heading}deg)`;
 });
 
 function calculateBearing(lat1, lon1, lat2, lon2) {
-  const φ1 = lat1 * Math.PI / 180;
-  const φ2 = lat2 * Math.PI / 180;
-  const λ1 = lon1 * Math.PI / 180;
-  const λ2 = lon2 * Math.PI / 180;
-
-  const y = Math.sin(λ2 - λ1) * Math.cos(φ2);
-  const x = Math.cos(φ1)*Math.sin(φ2) - Math.sin(φ1)*Math.cos(φ2)*Math.cos(λ2-λ1);
+  const y = Math.sin((lon2 - lon1) * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180);
+  const x = Math.cos(lat1 * Math.PI / 180) * Math.sin(lat2 * Math.PI / 180) -
+            Math.sin(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+            Math.cos((lon2 - lon1) * Math.PI / 180);
   return (Math.atan2(y, x) * 180 / Math.PI + 360) % 360;
 }
 
@@ -217,14 +224,14 @@ function gpsError(err) {
 }
 
 // ===============================
-// SCAN ROCK
+// SCAN ROCK BUTTON
 // ===============================
 scanRockBtn.onclick = () => {
-  window.location.href = "https://challengeaccepted.quest/scan";
+  window.location.href = "https://challengeaccepted.quest/scan-rock";
 };
 
 // ===============================
-// BACK
+// BACK BUTTON
 // ===============================
 backBtn.onclick = () => {
   detectorDiv.style.display = "none";
