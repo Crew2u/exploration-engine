@@ -35,6 +35,7 @@ select { width:90%; max-width:360px; }
   <div class="box" id="bearing">Bearing: —</div>
   <div class="box" id="compass">Compass: —</div>
   <div class="box" id="accuracy">Accuracy: —</div>
+  <div class="box" id="hotcold">Proximity: —</div>
 </div>
 
 <button id="start">Activate Scanner</button>
@@ -98,7 +99,7 @@ function initScanner() {
     const toRad = d => d*Math.PI/180;
     const toDeg = r => (r*180/Math.PI+360)%360;
     const y = Math.sin(toRad(lon2-lon1))*Math.cos(toRad(lat2));
-    const x = Math.cos(toRad(lat1))*Math.sin(toRad(lat2)) - Math.sin(toRad(lat1))*Math.cos(toRad(lat2))*Math.cos(toRad(lon2-lon1));
+    const x = Math.cos(toRad(lat1))*Math.sin(toRad(lat2)) - Math.sin(toRad(lat1])*Math.cos(toRad(lat2))*Math.cos(toRad(lon2-lon1));
     return toDeg(Math.atan2(y,x));
   }
 
@@ -136,10 +137,20 @@ function initScanner() {
     const relative=(bear-compassHeading+360)%360;
     smoothAngle+=(relative-smoothAngle)*0.15;
     arrow.style.transform=`translateX(-50%) rotate(${smoothAngle}deg)`;
+
     document.getElementById("target").textContent=`Target: ${TARGET_NAME} (${TARGET_LAT}, ${TARGET_LON})`;
     document.getElementById("distance").textContent=dist<1000?`Distance: ${dist.toFixed(1)} m`:`Distance: ${(dist/1000).toFixed(3)} km`;
     document.getElementById("bearing").textContent=`Bearing: ${bear.toFixed(1)}°`;
     document.getElementById("compass").textContent=`Compass: ${compassHeading.toFixed(1)}°`;
+
+    // HOT / COLD indicator
+    let hotcold='';
+    if(dist<=20) hotcold='🔥 Very Hot';
+    else if(dist<=50) hotcold='🌡️ Hot';
+    else if(dist<=100) hotcold='🌡️ Warm';
+    else if(dist<=200) hotcold='❄️ Cold';
+    else hotcold='🥶 Very Cold';
+    document.getElementById("hotcold").textContent=`Proximity: ${hotcold}`;
   }
 
   /* ------------------ START ------------------ */
