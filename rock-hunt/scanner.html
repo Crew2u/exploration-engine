@@ -5,18 +5,33 @@
 <title>Prospecting Scanner</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <style>
-body { margin:0; font-family:system-ui,sans-serif; background:#0b0b0b; color:#00ffcc; display:flex; flex-direction:column; align-items:center; padding:10px; }
-h1 { margin:10px 0; text-align:center; }
-#scanner { width:300px; height:300px; border-radius:50%; border:3px solid #00ffcc; position:relative; margin:15px; background:radial-gradient(circle at center, #003300 0%, #001100 80%); overflow:hidden; }
-#arrow { position:absolute; bottom:50%; left:50%; width:6px; height:120px; background:#ff4444; transform-origin:bottom center; transform:translateX(-50%) rotate(0deg); border-radius:4px; transition:transform 0.1s linear; }
-.rock { position:absolute; width:24px; height:24px; border-radius:50%; box-shadow:0 0 6px #ffff00; cursor:pointer; }
+body {
+  margin:0; font-family:system-ui,sans-serif; background:#0b0b0b; color:#00ffcc;
+  display:flex; flex-direction:column; align-items:center; padding:10px;
+}
+h1 { margin:10px 0; text-align:center; text-shadow:0 0 6px #00ffcc; }
+#scanner {
+  width:300px; height:300px; border-radius:50%; border:3px solid #00ffcc;
+  position:relative; margin:15px; background:radial-gradient(circle at center, #001100 0%, #003300 70%);
+  overflow:hidden; box-shadow:0 0 20px #00ffcc inset, 0 0 30px #00ffcc;
+}
+#radarSweep {
+  position:absolute; width:300px; height:300px; border-radius:50%;
+  background:conic-gradient(rgba(0,255,0,0.3) 0deg, rgba(0,255,0,0) 30deg, rgba(0,255,0,0) 360deg);
+  transform:rotate(0deg); pointer-events:none;
+}
+#arrow { position:absolute; bottom:50%; left:50%; width:6px; height:120px;
+  background:#ff4444; transform-origin:bottom center; transform:translateX(-50%) rotate(0deg);
+  border-radius:4px; transition:transform 0.1s linear; z-index:5;
+}
+.rock { position:absolute; width:24px; height:24px; border-radius:50%; box-shadow:0 0 8px #ffff00; cursor:pointer; z-index:6; }
 #info { width:90%; max-width:360px; font-size:0.95em; line-height:1.4; text-align:center; margin-top:10px; }
 .box { border:1px solid #00ffcc44; padding:8px; margin:6px 0; border-radius:6px; }
 button, select { margin:10px 0; padding:12px 22px; font-size:1em; border-radius:8px; border:none; background:#00ffcc; color:#000; cursor:pointer; }
 select { width:90%; max-width:360px; }
-#proximityMeter { width: 90%; max-width:360px; height:20px; background:#004422; border:1px solid #00ff44; border-radius:10px; overflow:hidden; margin-top:10px; }
+#proximityMeter { width:90%; max-width:360px; height:20px; background:#004422; border:1px solid #00ff44; border-radius:10px; overflow:hidden; margin-top:10px; }
 #proximityFill { width:0%; height:100%; background:#ff4444; transition: width 0.2s ease; }
-#scanRock { background:#ff4444; color:#fff; font-weight:bold; width:90%; max-width:360px; }
+#scanRock { background:#ff4444; color:#fff; font-weight:bold; width:90%; max-width:360px; box-shadow:0 0 8px #ff4444; }
 </style>
 </head>
 <body>
@@ -28,6 +43,7 @@ select { width:90%; max-width:360px; }
 </select>
 
 <div id="scanner">
+  <div id="radarSweep"></div>
   <div id="arrow"></div>
 </div>
 
@@ -69,8 +85,10 @@ function initScanner() {
   const proximityFill = document.getElementById("proximityFill");
   const scanRockBtn = document.getElementById("scanRock");
   const scannerDiv = document.getElementById("scanner");
+  const radarSweep = document.getElementById("radarSweep");
+  let sweepAngle=0;
 
-  // Dropdown locations
+  // Dropdown
   select.innerHTML = '';
   PROSPECTING_LOCATIONS.forEach((loc,i)=>{
     const opt = document.createElement('option');
@@ -78,7 +96,6 @@ function initScanner() {
     select.appendChild(opt);
   });
   select.value=0;
-
   select.addEventListener('change', ()=>{
     const idx = parseInt(select.value);
     TARGET = PROSPECTING_LOCATIONS[idx];
@@ -88,11 +105,11 @@ function initScanner() {
     update();
   });
 
-  // Haversine/Bearing
+  // Haversine / Bearing
   const toRad=d=>d*Math.PI/180;
   const toDeg=r=>(r*180/Math.PI+360)%360;
   function haversine(lat1,lon1,lat2,lon2){ const R=6371000,dLat=toRad(lat2-lat1),dLon=toRad(lon2-lon1); const a=Math.sin(dLat/2)**2+Math.cos(toRad(lat1))*Math.cos(toRad(lat2))*Math.sin(dLon/2)**2; return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a)); }
-  function bearing(lat1,lon1,lat2,lon2){ const y=Math.sin(toRad(lon2-lon1))*Math.cos(toRad(lat2)),x=Math.cos(toRad(lat1))*Math.sin(toRad(lat2))-Math.sin(toRad(lat1))*Math.cos(toRad(lat2))*Math.cos(toRad(lon2-lon1); return toDeg(Math.atan2(y,x)); }
+  function bearing(lat1,lon1,lat2,lon2){ const y=Math.sin(toRad(lon2-lon1))*Math.cos(toRad(lat2)), x=Math.cos(toRad(lat1))*Math.sin(toRad(lat2))-Math.sin(toRad(lat1))*Math.cos(toRad(lat2))*Math.cos(toRad(lon2-lon1)); return toDeg(Math.atan2(y,x)); }
 
   // GPS
   function startGPS() {
@@ -131,7 +148,7 @@ function initScanner() {
       rock.dataset.rockId=['G','S','C','M'][Math.floor(Math.random()*4)]+Math.floor(Math.random()*1000);
       rock.addEventListener('click', ()=>{
         const qr=rock.dataset.rockId;
-        window.open(`https://crew2u.wixsite.com/rockhunt?rock=${qr}`, '_blank');
+        window.location.href=`https://www.challengeaccepted.quest/prospect-scan?rock=${qr}`;
       });
       scannerDiv.appendChild(rock);
       rocks.push(rock);
@@ -165,12 +182,17 @@ function initScanner() {
 
     const pct=Math.min(1,200/dist);
     proximityFill.style.width=`${(pct*100).toFixed(1)}%`;
+  }
 
-    scanRockBtn.disabled = false; // always visible
+  function animateSweep(){
+    sweepAngle=(sweepAngle+2)%360;
+    radarSweep.style.transform=`rotate(${sweepAngle}deg)`;
+    requestAnimationFrame(animateSweep);
   }
 
   async function start(){
     spawnRocks();
+    animateSweep();
     if(typeof DeviceOrientationEvent!=="undefined" && typeof DeviceOrientationEvent.requestPermission==="function"){
       const res=await DeviceOrientationEvent.requestPermission();
       if(res!=="granted"){ alert("Compass permission denied"); return; }
@@ -185,10 +207,9 @@ function initScanner() {
   scanRockBtn.addEventListener('click', ()=>{
     if(rocks.length>0){
       const qr = rocks[Math.floor(Math.random()*rocks.length)].dataset.rockId;
-      window.open(`https://crew2u.wixsite.com/rockhunt?rock=${qr}`, '_blank');
+      window.location.href=`https://www.challengeaccepted.quest/prospect-scan?rock=${qr}`;
     } else alert("No rocks found!");
   });
-
 }
 
 setTimeout(initScanner,50);
