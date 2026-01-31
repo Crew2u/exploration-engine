@@ -1,36 +1,254 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Prospecting Scanner</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link rel="stylesheet" href="style.css">
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Rock Prospecting Scanner</title>
+
+<style>
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background: #0b0f14;
+  color: #00ffcc;
+  text-align: center;
+}
+
+h1 { margin-top: 20px; }
+
+button {
+  padding: 15px;
+  margin: 10px;
+  font-size: 18px;
+  background: #00ffcc;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+#detector { display: none; }
+
+#hotBar {
+  width: 80%;
+  height: 20px;
+  background: #222;
+  margin: 20px auto;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+#hotFill {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(to right, blue, yellow, red);
+}
+
+#arrow {
+  font-size: 60px;
+  margin: 20px;
+}
+
+.small {
+  font-size: 14px;
+  opacity: 0.8;
+}
+</style>
 </head>
+
 <body>
 
-  <h1>PROSPECTING SCANNER</h1>
+<h1>FIELD PROSPECTING SCANNER</h1>
 
-  <!-- LOCATION SELECTION -->
-  <div id="locations"></div>
+<div id="locations">
+  <p>Select Prospecting Zone</p>
+</div>
 
-  <!-- DETECTOR UI -->
-  <div id="detector" style="display:none;">
-    <div id="status">Initializing...</div>
-    <div id="distance">Distance: -- m</div>
+<div id="detector">
+  <div id="arrow">⬆️</div>
+  <div id="hotBar"><div id="hotFill"></div></div>
+  <p id="status">Initializing…</p>
+  <p id="distance"></p>
 
-    <div id="hotCold">
-      <div id="hotFill"></div>
-    </div>
+  <button id="scanRockBtn">SCAN ROCK</button><br>
+  <button id="backBtn">CHANGE ZONE</button>
+</div>
 
-    <div id="compass">
-      <img src="images/arrow.png" id="arrow">
-    </div>
+<script>
+// ===============================
+// PROSPECTING ZONES (EDIT HERE)
+// ===============================
+const PROSPECTING_LOCATIONS = [
+  {
+    name: "TEST ZONE (HOME)",
+    lat: -26.650000,
+    lng: 152.950000
+  },
+  {
+    name: "FOREST RIDGE",
+    lat: -26.641234,
+    lng: 152.932345
+  }
+];
 
-    <button id="scanRockBtn">SCAN ROCK</button>
-    <button id="backBtn">Change Location</button>
-  </div>
+// ===============================
+// ELEMENTS
+// ===============================
+const locationsDiv = document.getElementById("locations");
+const detectorDiv = document.getElementById("detector");
+const statusEl = document.getElementById("status");
+const distanceEl = document.getElementById("distance");
+const hotFill = document.getElementById("hotFill");
+const arrow = document.getElementById("arrow");
+const scanRockBtn = document.getElementById("scanRockBtn");
+const backBtn = document.getElementById("backBtn");
 
-  <script src="locations.js"></script>
-  <script src="app.js"></script>
+let selectedZone = null;
+let currentPosition = null;
+let gpsWatchId = null;
+
+// ===============================
+// BUILD ZONE BUTTONS
+// ===============================
+PROSPECTING_LOCATIONS.forEach(zone => {
+  const btn = document.createElement("button");
+  btn.innerText = zone.name;
+  btn.onclick = () => selectZone(zone);
+  locationsDiv.appendChild(btn);
+});
+
+// ===============================
+// SELECT ZONE (USER TAP)
+// ===============================
+function selectZone(zone) {
+  selectedZone = zone;
+  locationsDiv.style.display = "none";
+  detectorDiv.style.display = "block";
+  statusEl.innerText = "Requesting GPS…";
+
+  startGPS();
+}
+
+// ===============================
+// START GPS (FIXES PERMISSION ERROR)
+// ===============================
+function startGPS() {
+  if (!navigator.geolocation) {
+    statusEl.innerText = "GPS not supported on this device";
+    return;
+  }
+
+  gpsWatchId = navigator.geolocation.watchPosition(
+    positionUpdate,
+    gpsError,
+    { enableHighAccuracy: true }
+  );
+}
+
+// ===============================
+// GPS UPDATE
+// ===============================
+function positionUpdate(pos) {
+  currentPosition = {
+    lat: pos.coords.latitude,
+    lng: pos.coords.longitude
+  };
+
+  const d = getDistance(
+    currentPosition.lat,
+    currentPosition.lng,
+    selectedZone.lat,
+    selectedZone.lng
+  );
+
+  distanceEl.innerText = `Distance: ${Math.round(d)} m`;
+  updateDetector(d);
+}
+
+// ===============================
+// HOT / COLD LOGIC
+// ===============================
+function updateDetector(distance) {
+  const heat = Math.max(0, 100 - distance);
+  hotFill.style.width = Math.min(100, heat) + "%";
+
+  if (distance < 10) {
+    statusEl.innerText = "🔥 STRONG SIGNAL — SEARCH AREA";
+  } else if (distance < 50) {
+    statusEl.innerText = "Signal increasing…";
+  } else {
+    statusEl.innerText = "Scanning…";
+  }
+}
+
+// ===============================
+// DISTANCE MATH
+// ===============================
+function getDistance(lat1, lon1, lat2, lon2) {
+  const R = 6371000;
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(lat1 * Math.PI / 180) *
+    Math.cos(lat2 * Math.PI / 180) *
+    Math.sin(dLon / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+// ===============================
+// COMPASS
+// ===============================
+window.addEventListener("deviceorientation", e => {
+  if (!currentPosition || e.alpha === null) return;
+
+  const heading = e.alpha;
+  const bearing = calculateBearing(
+    currentPosition.lat,
+    currentPosition.lng,
+    selectedZone.lat,
+    selectedZone.lng
+  );
+
+  arrow.style.transform = `rotate(${bearing - heading}deg)`;
+});
+
+function calculateBearing(lat1, lon1, lat2, lon2) {
+  const y = Math.sin((lon2 - lon1) * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180);
+  const x =
+    Math.cos(lat1 * Math.PI / 180) * Math.sin(lat2 * Math.PI / 180) -
+    Math.sin(lat1 * Math.PI / 180) *
+    Math.cos(lat2 * Math.PI / 180) *
+    Math.cos((lon2 - lon1) * Math.PI / 180);
+  return (Math.atan2(y, x) * 180 / Math.PI + 360) % 360;
+}
+
+// ===============================
+// GPS ERRORS
+// ===============================
+function gpsError(err) {
+  if (err.code === 1) {
+    statusEl.innerText =
+      "Location access denied. Enable GPS permissions and reload.";
+  } else {
+    statusEl.innerText = "GPS error: " + err.message;
+  }
+}
+
+// ===============================
+// SCAN ROCK
+// ===============================
+scanRockBtn.onclick = () => {
+  window.location.href = "https://challengeaccepted.quest/scan";
+};
+
+// ===============================
+// BACK
+// ===============================
+backBtn.onclick = () => {
+  detectorDiv.style.display = "none";
+  locationsDiv.style.display = "block";
+};
+</script>
+
 </body>
 </html>
