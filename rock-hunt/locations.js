@@ -5,8 +5,8 @@ const PROSPECTING_LOCATIONS = [
   {
     id: "test_zone",
     name: "Test Zone",
-    lat: -26.0000,   // <-- change this to your current location for testing
-    lng: 152.0000,   // <-- change this to your current location for testing
+    lat: -26.409896,   // <-- change this to your current location for testing
+    lng: 152.926777,   // <-- change this to your current location for testing
     radius: 50       // meters to trigger compass/detector
   },
   {
