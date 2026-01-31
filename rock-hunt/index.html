@@ -137,8 +137,18 @@ function startGPS() {
     return;
   }
 
-  gpsWatchId = navigator.geolocation.watchPosition(
-    positionUpdate,
+  // Force permission prompt
+  navigator.geolocation.getCurrentPosition(
+    pos => {
+      positionUpdate(pos);
+
+      // Start continuous tracking AFTER permission granted
+      gpsWatchId = navigator.geolocation.watchPosition(
+        positionUpdate,
+        gpsError,
+        { enableHighAccuracy: true }
+      );
+    },
     gpsError,
     { enableHighAccuracy: true }
   );
