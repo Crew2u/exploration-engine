@@ -7,8 +7,8 @@ const PROSPECTING_LOCATIONS = [
   {
     id: "test_zone",
     name: "Test Zone (Local)",
-    lat: -26.409896,   // CHANGE to your current latitude
-    lng: 152.926777,   // CHANGE to your current longitude
+    lat: -26.409861,   // CHANGE to your current latitude
+    lng: 152.926338,   // CHANGE to your current longitude
     radius: 50
   },
   {
