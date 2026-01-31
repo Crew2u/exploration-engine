@@ -31,18 +31,18 @@ button {
 #hotBar {
   width: 90%;
   height: 40px;
-  background: #111;
+  background: #222;
   margin: 20px auto;
   border-radius: 20px;
   overflow: hidden;
-  box-shadow: 0 0 20px #00ffcc;
+  box-shadow: 0 0 15px #00ffcc70 inset;
 }
 
 #hotFill {
   height: 100%;
   width: 0%;
-  background: linear-gradient(to right, blue, cyan, yellow, orange, red);
-  transition: width 0.2s, box-shadow 0.2s;
+  background: linear-gradient(to right, blue, yellow, red);
+  transition: width 0.2s ease;
 }
 
 #arrow {
@@ -81,7 +81,7 @@ button {
 // PROSPECTING ZONES
 // ===============================
 const PROSPECTING_LOCATIONS = [
-  { name: "TEST ZONE (HOME)", lat: -26.409830, lng: 152.926372 },
+  { name: "TEST ZONE (HOME)", lat: -26.650000, lng: 152.950000 },
   { name: "FOREST RIDGE", lat: -26.641234, lng: 152.932345 }
 ];
 
@@ -100,7 +100,6 @@ const backBtn = document.getElementById("backBtn");
 let selectedZone = null;
 let currentPosition = null;
 let gpsWatchId = null;
-let lastVibration = 0;
 
 // ===============================
 // BUILD ZONE BUTTONS
@@ -120,6 +119,7 @@ function selectZone(zone) {
   locationsDiv.style.display = "none";
   detectorDiv.style.display = "block";
   statusEl.innerText = "Requesting GPS…";
+
   startGPS();
 }
 
@@ -132,14 +132,11 @@ function startGPS() {
     return;
   }
 
+  // Prompt for permission, then start watch
   navigator.geolocation.getCurrentPosition(
     pos => {
       positionUpdate(pos);
-      gpsWatchId = navigator.geolocation.watchPosition(
-        positionUpdate,
-        gpsError,
-        { enableHighAccuracy: true }
-      );
+      gpsWatchId = navigator.geolocation.watchPosition(positionUpdate, gpsError, { enableHighAccuracy: true });
     },
     gpsError,
     { enableHighAccuracy: true }
@@ -151,31 +148,24 @@ function startGPS() {
 // ===============================
 function positionUpdate(pos) {
   currentPosition = { lat: pos.coords.latitude, lng: pos.coords.longitude };
-  const distance = getDistance(
-    currentPosition.lat,
-    currentPosition.lng,
-    selectedZone.lat,
-    selectedZone.lng
-  );
+
+  const distance = getDistance(currentPosition.lat, currentPosition.lng, selectedZone.lat, selectedZone.lng);
 
   distanceEl.innerText = `Distance: ${Math.round(distance)} m`;
   updateDetector(distance);
 }
 
 // ===============================
-// HOT / COLD LOGIC WITH VIBRATION & HUM
+// HOT / COLD DETECTOR + VIBRATION + HUM
 // ===============================
 function updateDetector(distance) {
   const heat = Math.max(0, 100 - distance);
   hotFill.style.width = Math.min(100, heat) + "%";
 
-  // Dramatic glow effect
-  hotFill.style.boxShadow = `0 0 ${Math.min(50, heat)}px #ff3300`;
-
-  // Update status text
   if (distance < 10) {
-    statusEl.innerText = "🔥 STRONG SIGNAL — SEARCH AREA";
-    heartbeatVibration();
+    statusEl.innerText = "🔥 HIGH MINERAL SIGNAL — SEARCH AREA";
+    navigator.vibrate && navigator.vibrate([100, 50, 100]); // subtle pulse
+    playHum();
   } else if (distance < 50) {
     statusEl.innerText = "Signal increasing…";
   } else {
@@ -183,41 +173,36 @@ function updateDetector(distance) {
   }
 }
 
-// heartbeat vibration every 1s if very hot
-function heartbeatVibration() {
-  const now = Date.now();
-  if (now - lastVibration > 1000) {
-    lastVibration = now;
-    if (navigator.vibrate) navigator.vibrate([100, 50, 100]); // pulse pattern
-    playHum();
-  }
-}
-
-// Play a subtle hum
+// Hum feedback (simple beep via AudioContext)
+let humCtx;
 function playHum() {
-  const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-  const oscillator = audioCtx.createOscillator();
-  oscillator.type = "sine";
-  oscillator.frequency.setValueAtTime(440, audioCtx.currentTime); // A4
-  const gainNode = audioCtx.createGain();
-  gainNode.gain.setValueAtTime(0.05, audioCtx.currentTime); // very low volume
-  oscillator.connect(gainNode).connect(audioCtx.destination);
-  oscillator.start();
-  oscillator.stop(audioCtx.currentTime + 0.2); // short hum
+  if (!humCtx) humCtx = new (window.AudioContext || window.webkitAudioContext)();
+  const osc = humCtx.createOscillator();
+  const gain = humCtx.createGain();
+  osc.type = "sine";
+  osc.frequency.value = 200; // low hum
+  gain.gain.value = 0.05;
+  osc.connect(gain);
+  gain.connect(humCtx.destination);
+  osc.start();
+  osc.stop(humCtx.currentTime + 0.2);
 }
 
 // ===============================
-// DISTANCE (HAVERSINE)
+// DISTANCE CALC (FIXED HAVERSINE)
 // ===============================
 function getDistance(lat1, lon1, lat2, lon2) {
-  const R = 6371000;
-  const φ1 = lat1 * Math.PI/180;
-  const φ2 = lat2 * Math.PI/180;
-  const Δφ = (lat2-lat1) * Math.PI/180;
-  const Δλ = (lon2-lon1) * Math.PI/180;
+  const R = 6371000; // meters
+  const φ1 = lat1 * Math.PI / 180;
+  const φ2 = lat2 * Math.PI / 180;
+  const Δφ = (lat2 - lat1) * Math.PI / 180;
+  const Δλ = (lon2 - lon1) * Math.PI / 180;
 
-  const a = Math.sin(Δφ/2)**2 + Math.cos(φ1)*Math.cos(φ2)*Math.sin(Δλ/2)**2;
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  const a = Math.sin(Δφ / 2) ** 2 +
+            Math.cos(φ1) * Math.cos(φ2) *
+            Math.sin(Δλ / 2) ** 2;
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
   return R * c;
 }
 
@@ -226,21 +211,19 @@ function getDistance(lat1, lon1, lat2, lon2) {
 // ===============================
 window.addEventListener("deviceorientation", e => {
   if (!currentPosition || e.alpha === null) return;
+
   const heading = e.alpha;
-  const bearing = calculateBearing(
-    currentPosition.lat,
-    currentPosition.lng,
-    selectedZone.lat,
-    selectedZone.lng
-  );
+  const bearing = calculateBearing(currentPosition.lat, currentPosition.lng, selectedZone.lat, selectedZone.lng);
+
   arrow.style.transform = `rotate(${bearing - heading}deg)`;
 });
 
 function calculateBearing(lat1, lon1, lat2, lon2) {
-  const y = Math.sin((lon2-lon1)*Math.PI/180)*Math.cos(lat2*Math.PI/180);
-  const x = Math.cos(lat1*Math.PI/180)*Math.sin(lat2*Math.PI/180) -
-            Math.sin(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.cos((lon2-lon1)*Math.PI/180);
-  return (Math.atan2(y,x)*180/Math.PI + 360) % 360;
+  const y = Math.sin((lon2 - lon1) * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180);
+  const x = Math.cos(lat1 * Math.PI / 180) * Math.sin(lat2 * Math.PI / 180) -
+            Math.sin(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+            Math.cos((lon2 - lon1) * Math.PI / 180);
+  return (Math.atan2(y, x) * 180 / Math.PI + 360) % 360;
 }
 
 // ===============================
@@ -254,9 +237,7 @@ function gpsError(err) {
 // ===============================
 // SCAN ROCK
 // ===============================
-scanRockBtn.onclick = () => {
-  window.location.href = "https://challengeaccepted.quest/scan-rock";
-};
+scanRockBtn.onclick = () => window.location.href = "https://challengeaccepted.quest/scan";
 
 // ===============================
 // BACK
