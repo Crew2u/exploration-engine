@@ -75,19 +75,11 @@ button {
 
 <script>
 // ===============================
-// PROSPECTING ZONES (EDIT HERE)
+// PROSPECTING ZONES
 // ===============================
 const PROSPECTING_LOCATIONS = [
-  {
-    name: "TEST ZONE (HOME)",
-    lat: -26.409830,
-    lng: 152.926372
-  },
-  {
-    name: "FOREST RIDGE",
-    lat: -26.641234,
-    lng: 152.932345
-  }
+  { name: "TEST ZONE (HOME)", lat: -26.650000, lng: 152.950000 },
+  { name: "FOREST RIDGE", lat: -26.641234, lng: 152.932345 }
 ];
 
 // ===============================
@@ -117,7 +109,7 @@ PROSPECTING_LOCATIONS.forEach(zone => {
 });
 
 // ===============================
-// SELECT ZONE (USER TAP)
+// SELECT ZONE
 // ===============================
 function selectZone(zone) {
   selectedZone = zone;
@@ -129,7 +121,7 @@ function selectZone(zone) {
 }
 
 // ===============================
-// START GPS (FIXES PERMISSION ERROR)
+// START GPS
 // ===============================
 function startGPS() {
   if (!navigator.geolocation) {
@@ -137,12 +129,12 @@ function startGPS() {
     return;
   }
 
-  // Force permission prompt
+  // Get permission first
   navigator.geolocation.getCurrentPosition(
     pos => {
       positionUpdate(pos);
 
-      // Start continuous tracking AFTER permission granted
+      // Start continuous tracking
       gpsWatchId = navigator.geolocation.watchPosition(
         positionUpdate,
         gpsError,
@@ -158,20 +150,17 @@ function startGPS() {
 // GPS UPDATE
 // ===============================
 function positionUpdate(pos) {
-  currentPosition = {
-    lat: pos.coords.latitude,
-    lng: pos.coords.longitude
-  };
+  currentPosition = { lat: pos.coords.latitude, lng: pos.coords.longitude };
 
-  const d = getDistance(
+  const distance = getDistance(
     currentPosition.lat,
     currentPosition.lng,
     selectedZone.lat,
     selectedZone.lng
   );
 
-  distanceEl.innerText = `Distance: ${Math.round(d)} m`;
-  updateDetector(d);
+  distanceEl.innerText = `Distance: ${Math.round(distance)} m`;
+  updateDetector(distance);
 }
 
 // ===============================
@@ -181,28 +170,24 @@ function updateDetector(distance) {
   const heat = Math.max(0, 100 - distance);
   hotFill.style.width = Math.min(100, heat) + "%";
 
-  if (distance < 10) {
-    statusEl.innerText = "🔥 STRONG SIGNAL — SEARCH AREA";
-  } else if (distance < 50) {
-    statusEl.innerText = "Signal increasing…";
-  } else {
-    statusEl.innerText = "Scanning…";
-  }
+  if (distance < 10) statusEl.innerText = "🔥 STRONG SIGNAL — SEARCH AREA";
+  else if (distance < 50) statusEl.innerText = "Signal increasing…";
+  else statusEl.innerText = "Scanning…";
 }
 
 // ===============================
-// DISTANCE MATH
+// CORRECT DISTANCE (HAVERSINE)
 // ===============================
 function getDistance(lat1, lon1, lat2, lon2) {
-  const R = 6371000;
-  const dLat = (lat2 - lat1) * Math.PI / 180;
-  const dLon = (lon2 - lon1) * Math.PI / 180;
-  const a =
-    Math.sin(dLat / 2) ** 2 +
-    Math.cos(lat1 * Math.PI / 180) *
-    Math.cos(lat2 * Math.PI / 180) *
-    Math.sin(dLon / 2) ** 2;
-  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  const R = 6371000; // meters
+  const φ1 = lat1 * Math.PI / 180;
+  const φ2 = lat2 * Math.PI / 180;
+  const Δφ = (lat2 - lat1) * Math.PI / 180;
+  const Δλ = (lon2 - lon1) * Math.PI / 180;
+
+  const a = Math.sin(Δφ/2)**2 + Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ/2)**2;
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  return R * c;
 }
 
 // ===============================
@@ -210,25 +195,22 @@ function getDistance(lat1, lon1, lat2, lon2) {
 // ===============================
 window.addEventListener("deviceorientation", e => {
   if (!currentPosition || e.alpha === null) return;
-
   const heading = e.alpha;
   const bearing = calculateBearing(
-    currentPosition.lat,
-    currentPosition.lng,
-    selectedZone.lat,
-    selectedZone.lng
+    currentPosition.lat, currentPosition.lng,
+    selectedZone.lat, selectedZone.lng
   );
-
   arrow.style.transform = `rotate(${bearing - heading}deg)`;
 });
 
 function calculateBearing(lat1, lon1, lat2, lon2) {
-  const y = Math.sin((lon2 - lon1) * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180);
-  const x =
-    Math.cos(lat1 * Math.PI / 180) * Math.sin(lat2 * Math.PI / 180) -
-    Math.sin(lat1 * Math.PI / 180) *
-    Math.cos(lat2 * Math.PI / 180) *
-    Math.cos((lon2 - lon1) * Math.PI / 180);
+  const φ1 = lat1 * Math.PI / 180;
+  const φ2 = lat2 * Math.PI / 180;
+  const λ1 = lon1 * Math.PI / 180;
+  const λ2 = lon2 * Math.PI / 180;
+
+  const y = Math.sin(λ2 - λ1) * Math.cos(φ2);
+  const x = Math.cos(φ1)*Math.sin(φ2) - Math.sin(φ1)*Math.cos(φ2)*Math.cos(λ2-λ1);
   return (Math.atan2(y, x) * 180 / Math.PI + 360) % 360;
 }
 
@@ -236,12 +218,8 @@ function calculateBearing(lat1, lon1, lat2, lon2) {
 // GPS ERRORS
 // ===============================
 function gpsError(err) {
-  if (err.code === 1) {
-    statusEl.innerText =
-      "Location access denied. Enable GPS permissions and reload.";
-  } else {
-    statusEl.innerText = "GPS error: " + err.message;
-  }
+  if (err.code === 1) statusEl.innerText = "Location access denied. Enable GPS permissions and reload.";
+  else statusEl.innerText = "GPS error: " + err.message;
 }
 
 // ===============================
