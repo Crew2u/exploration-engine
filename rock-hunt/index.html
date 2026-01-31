@@ -47,11 +47,6 @@ button {
   font-size: 60px;
   margin: 20px;
 }
-
-.small {
-  font-size: 14px;
-  opacity: 0.8;
-}
 </style>
 </head>
 
@@ -121,7 +116,7 @@ function selectZone(zone) {
 }
 
 // ===============================
-// START GPS
+// START GPS WITH PERMISSION PROMPT
 // ===============================
 function startGPS() {
   if (!navigator.geolocation) {
@@ -129,12 +124,11 @@ function startGPS() {
     return;
   }
 
-  // Get permission first
   navigator.geolocation.getCurrentPosition(
     pos => {
       positionUpdate(pos);
 
-      // Start continuous tracking
+      // Start continuous tracking after permission granted
       gpsWatchId = navigator.geolocation.watchPosition(
         positionUpdate,
         gpsError,
@@ -176,7 +170,7 @@ function updateDetector(distance) {
 }
 
 // ===============================
-// CORRECT DISTANCE (HAVERSINE)
+// CORRECT HAVERSINE DISTANCE
 // ===============================
 function getDistance(lat1, lon1, lat2, lon2) {
   const R = 6371000; // meters
