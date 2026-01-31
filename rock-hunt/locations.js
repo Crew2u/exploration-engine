@@ -9,7 +9,7 @@ const PROSPECTING_LOCATIONS = [
     name: "Test Zone (Local)",
     lat: -26.409861,   // CHANGE to your current latitude
     lng: 152.926338,   // CHANGE to your current longitude
-    radius: 50
+    radius: 30
   },
   {
     id: "quartz_ridge",
