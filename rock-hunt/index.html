@@ -24,35 +24,31 @@ button {
   border: none;
   border-radius: 6px;
   cursor: pointer;
-  transition: transform 0.1s;
-}
-
-button:hover {
-  transform: scale(1.05);
 }
 
 #detector { display: none; }
 
 #hotBar {
-  width: 80%;
-  height: 20px;
-  background: #222;
+  width: 90%;
+  height: 40px;
+  background: #111;
   margin: 20px auto;
-  border-radius: 10px;
+  border-radius: 20px;
   overflow: hidden;
+  box-shadow: 0 0 20px #00ffcc;
 }
 
 #hotFill {
   height: 100%;
   width: 0%;
-  background: linear-gradient(to right, blue, yellow, red);
-  transition: width 0.3s;
+  background: linear-gradient(to right, blue, cyan, yellow, orange, red);
+  transition: width 0.2s, box-shadow 0.2s;
 }
 
 #arrow {
-  font-size: 60px;
+  font-size: 80px;
   margin: 20px;
-  transition: transform 0.3s ease-out;
+  transition: transform 0.2s ease;
 }
 
 .small {
@@ -104,6 +100,7 @@ const backBtn = document.getElementById("backBtn");
 let selectedZone = null;
 let currentPosition = null;
 let gpsWatchId = null;
+let lastVibration = 0;
 
 // ===============================
 // BUILD ZONE BUTTONS
@@ -135,7 +132,6 @@ function startGPS() {
     return;
   }
 
-  // Request permission first
   navigator.geolocation.getCurrentPosition(
     pos => {
       positionUpdate(pos);
@@ -155,50 +151,74 @@ function startGPS() {
 // ===============================
 function positionUpdate(pos) {
   currentPosition = { lat: pos.coords.latitude, lng: pos.coords.longitude };
-  const distance = getDistance(currentPosition.lat, currentPosition.lng, selectedZone.lat, selectedZone.lng);
+  const distance = getDistance(
+    currentPosition.lat,
+    currentPosition.lng,
+    selectedZone.lat,
+    selectedZone.lng
+  );
 
   distanceEl.innerText = `Distance: ${Math.round(distance)} m`;
   updateDetector(distance);
 }
 
 // ===============================
-// HOT / COLD DETECTOR
+// HOT / COLD LOGIC WITH VIBRATION & HUM
 // ===============================
 function updateDetector(distance) {
   const heat = Math.max(0, 100 - distance);
   hotFill.style.width = Math.min(100, heat) + "%";
 
+  // Dramatic glow effect
+  hotFill.style.boxShadow = `0 0 ${Math.min(50, heat)}px #ff3300`;
+
+  // Update status text
   if (distance < 10) {
     statusEl.innerText = "🔥 STRONG SIGNAL — SEARCH AREA";
-    hotFill.style.background = "linear-gradient(to right, orange, red, darkred)";
+    heartbeatVibration();
   } else if (distance < 50) {
     statusEl.innerText = "Signal increasing…";
-    hotFill.style.background = "linear-gradient(to right, blue, yellow, orange)";
   } else {
     statusEl.innerText = "Scanning…";
-    hotFill.style.background = "linear-gradient(to right, blue, cyan)";
   }
 }
 
+// heartbeat vibration every 1s if very hot
+function heartbeatVibration() {
+  const now = Date.now();
+  if (now - lastVibration > 1000) {
+    lastVibration = now;
+    if (navigator.vibrate) navigator.vibrate([100, 50, 100]); // pulse pattern
+    playHum();
+  }
+}
+
+// Play a subtle hum
+function playHum() {
+  const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  const oscillator = audioCtx.createOscillator();
+  oscillator.type = "sine";
+  oscillator.frequency.setValueAtTime(440, audioCtx.currentTime); // A4
+  const gainNode = audioCtx.createGain();
+  gainNode.gain.setValueAtTime(0.05, audioCtx.currentTime); // very low volume
+  oscillator.connect(gainNode).connect(audioCtx.destination);
+  oscillator.start();
+  oscillator.stop(audioCtx.currentTime + 0.2); // short hum
+}
+
 // ===============================
-// DISTANCE CALCULATION
-// ===============================
-// ===============================
-// ACCURATE DISTANCE CALC (HAVERSINE)
+// DISTANCE (HAVERSINE)
 // ===============================
 function getDistance(lat1, lon1, lat2, lon2) {
-  const R = 6371000; // Earth radius in meters
-  const φ1 = lat1 * Math.PI / 180;
-  const φ2 = lat2 * Math.PI / 180;
-  const Δφ = (lat2 - lat1) * Math.PI / 180;
-  const Δλ = (lon2 - lon1) * Math.PI / 180;
+  const R = 6371000;
+  const φ1 = lat1 * Math.PI/180;
+  const φ2 = lat2 * Math.PI/180;
+  const Δφ = (lat2-lat1) * Math.PI/180;
+  const Δλ = (lon2-lon1) * Math.PI/180;
 
-  const a = Math.sin(Δφ / 2) ** 2 +
-            Math.cos(φ1) * Math.cos(φ2) *
-            Math.sin(Δλ / 2) ** 2;
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-
-  return R * c; // returns distance in meters
+  const a = Math.sin(Δφ/2)**2 + Math.cos(φ1)*Math.cos(φ2)*Math.sin(Δλ/2)**2;
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  return R * c;
 }
 
 // ===============================
@@ -206,19 +226,21 @@ function getDistance(lat1, lon1, lat2, lon2) {
 // ===============================
 window.addEventListener("deviceorientation", e => {
   if (!currentPosition || e.alpha === null) return;
-
   const heading = e.alpha;
-  const bearing = calculateBearing(currentPosition.lat, currentPosition.lng, selectedZone.lat, selectedZone.lng);
-
+  const bearing = calculateBearing(
+    currentPosition.lat,
+    currentPosition.lng,
+    selectedZone.lat,
+    selectedZone.lng
+  );
   arrow.style.transform = `rotate(${bearing - heading}deg)`;
 });
 
 function calculateBearing(lat1, lon1, lat2, lon2) {
-  const y = Math.sin((lon2 - lon1) * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180);
-  const x = Math.cos(lat1 * Math.PI / 180) * Math.sin(lat2 * Math.PI / 180) -
-            Math.sin(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-            Math.cos((lon2 - lon1) * Math.PI / 180);
-  return (Math.atan2(y, x) * 180 / Math.PI + 360) % 360;
+  const y = Math.sin((lon2-lon1)*Math.PI/180)*Math.cos(lat2*Math.PI/180);
+  const x = Math.cos(lat1*Math.PI/180)*Math.sin(lat2*Math.PI/180) -
+            Math.sin(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.cos((lon2-lon1)*Math.PI/180);
+  return (Math.atan2(y,x)*180/Math.PI + 360) % 360;
 }
 
 // ===============================
@@ -230,14 +252,14 @@ function gpsError(err) {
 }
 
 // ===============================
-// SCAN ROCK BUTTON
+// SCAN ROCK
 // ===============================
 scanRockBtn.onclick = () => {
   window.location.href = "https://challengeaccepted.quest/scan-rock";
 };
 
 // ===============================
-// BACK BUTTON
+// BACK
 // ===============================
 backBtn.onclick = () => {
   detectorDiv.style.display = "none";
