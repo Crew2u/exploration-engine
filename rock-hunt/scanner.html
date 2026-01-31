@@ -39,18 +39,19 @@ select { width:90%; max-width:360px; }
 </div>
 
 <button id="start">Activate Scanner</button>
-console.log("PROSPECTING_LOCATIONS:", typeof PROSPECTING_LOCATIONS, PROSPECTING_LOCATIONS);
-  
+
 <!-- ================= LOCATIONS.JS ================= -->
-<script src="locations.js"></script>
+<script src="locations.js?v=2"></script> <!-- cache-busting version -->
 
 <script>
-/* ------------------ WAIT FOR LOCATIONS.JS ------------------ */
+/* ------------------ INIT SCANNER ------------------ */
 function initScanner() {
   if (!Array.isArray(PROSPECTING_LOCATIONS) || PROSPECTING_LOCATIONS.length === 0) {
     alert("No PROSPECTING_LOCATIONS found in locations.js!");
     return;
   }
+
+  console.log("Loaded PROSPECTING_LOCATIONS:", PROSPECTING_LOCATIONS);
 
   /* ------------------ VARIABLES ------------------ */
   let TARGET = PROSPECTING_LOCATIONS[0];
