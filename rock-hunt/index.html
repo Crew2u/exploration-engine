@@ -9,7 +9,7 @@
   body {
     margin: 0;
     font-family: system-ui, sans-serif;
-    background: #0a0a0a;
+    background: #0b0b0b;
     color: #00ffcc;
     display: flex;
     flex-direction: column;
@@ -17,42 +17,52 @@
     justify-content: center;
   }
 
-  h1 { margin: 0.2em 0; }
+  h1 { margin: 10px 0; }
 
   #scanner {
-    width: 220px;
-    height: 220px;
+    width: 240px;
+    height: 240px;
     border-radius: 50%;
     border: 3px solid #00ffcc;
     position: relative;
-    margin: 20px;
+    margin: 15px;
   }
 
   #arrow {
     position: absolute;
-    top: 50%;
+    bottom: 50%;
     left: 50%;
     width: 6px;
-    height: 90px;
+    height: 100px;
     background: #ff4444;
     transform-origin: bottom center;
-    transform: translate(-50%, -100%) rotate(0deg);
-    border-radius: 3px;
+    transform: translateX(-50%) rotate(0deg);
+    border-radius: 4px;
   }
 
   #info {
+    width: 90%;
+    max-width: 360px;
+    font-size: 0.95em;
+    line-height: 1.4;
     text-align: center;
-    font-size: 1.1em;
+  }
+
+  .box {
+    border: 1px solid #00ffcc44;
+    padding: 8px;
+    margin: 6px 0;
+    border-radius: 6px;
   }
 
   button {
-    margin-top: 20px;
-    padding: 12px 20px;
+    margin: 14px;
+    padding: 12px 22px;
     font-size: 1em;
     background: #00ffcc;
+    color: #000;
     border: none;
     border-radius: 8px;
-    color: #000;
   }
 </style>
 </head>
@@ -65,47 +75,39 @@
 </div>
 
 <div id="info">
-  <div id="distance">Distance: —</div>
-  <div id="coords"></div>
-  <div id="target"></div>
+  <div class="box" id="gps">GPS: —</div>
+  <div class="box" id="target">Target: —</div>
+  <div class="box" id="distance">Distance: —</div>
+  <div class="box" id="bearing">Bearing: —</div>
+  <div class="box" id="compass">Compass: —</div>
+  <div class="box" id="accuracy">Accuracy: —</div>
 </div>
+
 <button id="start">Activate Scanner</button>
 
+<!-- ================= LOCATIONS.JS ================= -->
+<script src="locations.js"></script>
+
 <script>
-/* ================= CONFIG ================= */
-const TARGET_LAT = -26.640123;   // <-- set your target
-const TARGET_LON = 152.934567;
-/* ========================================== */
+/* ===================== SET TARGET FROM LOCATIONS.JS ===================== */
+if (typeof TEST_LOCATION === "undefined") {
+  alert("locations.js not loaded or TEST_LOCATION not defined!");
+}
+
+let TARGET_LAT = TEST_LOCATION?.lat || 0;
+let TARGET_LON = TEST_LOCATION?.lon || 0;
+/* ====================================================================== */
 
 let currentLat = null;
 let currentLon = null;
 let compassHeading = null;
-let smoothedAngle = 0;
+let smoothAngle = 0;
 
 const arrow = document.getElementById("arrow");
-const distanceEl = document.getElementById("distance");
-const headingEl = document.getElementById("heading");
 
-/* ---------- GEOLOCATION ---------- */
-function startGPS() {
-  navigator.geolocation.watchPosition(
-    pos => {
-      currentLat = pos.coords.latitude;
-      currentLon = pos.coords.longitude;
-      updateUI();
-    },
-    err => alert("GPS error: " + err.message),
-    {
-      enableHighAccuracy: true,
-      maximumAge: 500,
-      timeout: 10000
-    }
-  );
-}
-
-/* ---------- DISTANCE (HAVERSINE) ---------- */
+/* ------------------ HAVERSINE ------------------ */
 function haversine(lat1, lon1, lat2, lon2) {
-  const R = 6371000;
+  const R = 6371000; // meters
   const toRad = d => d * Math.PI / 180;
 
   const dLat = toRad(lat2 - lat1);
@@ -120,7 +122,7 @@ function haversine(lat1, lon1, lat2, lon2) {
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
-/* ---------- BEARING ---------- */
+/* ------------------ BEARING ------------------ */
 function bearing(lat1, lon1, lat2, lon2) {
   const toRad = d => d * Math.PI / 180;
   const toDeg = r => (r * 180 / Math.PI + 360) % 360;
@@ -128,63 +130,98 @@ function bearing(lat1, lon1, lat2, lon2) {
   const y = Math.sin(toRad(lon2 - lon1)) * Math.cos(toRad(lat2));
   const x =
     Math.cos(toRad(lat1)) * Math.sin(toRad(lat2)) -
-    Math.sin(toRad(lat1)) * Math.cos(toRad(lat2)) *
+    Math.sin(toRad(lat1)) *
+    Math.cos(toRad(lat2)) *
     Math.cos(toRad(lon2 - lon1));
 
   return toDeg(Math.atan2(y, x));
 }
 
-/* ---------- COMPASS ---------- */
-function handleOrientation(e) {
-  let heading;
+/* ------------------ GPS ------------------ */
+function startGPS() {
+  navigator.geolocation.watchPosition(
+    pos => {
+      currentLat = pos.coords.latitude;
+      currentLon = pos.coords.longitude;
+
+      document.getElementById("gps").textContent =
+        `You: ${currentLat.toFixed(6)}, ${currentLon.toFixed(6)}`;
+
+      document.getElementById("accuracy").textContent =
+        `Accuracy: ±${pos.coords.accuracy.toFixed(1)} m`;
+
+      update();
+    },
+    err => alert("GPS error: " + err.message),
+    {
+      enableHighAccuracy: true,
+      maximumAge: 0,
+      timeout: 10000
+    }
+  );
+}
+
+/* ------------------ COMPASS ------------------ */
+function onOrientation(e) {
+  let heading = null;
 
   if (typeof e.webkitCompassHeading === "number") {
     heading = e.webkitCompassHeading; // iOS
-  } else if (e.absolute && e.alpha !== null) {
+  } else if (e.alpha !== null) {
     heading = 360 - e.alpha; // Android
-  } else {
-    return;
   }
 
+  if (heading === null) return;
+
   compassHeading = heading;
-  updateUI();
+  update();
 }
 
-/* ---------- UI UPDATE ---------- */
-function updateUI() {
+/* ------------------ UPDATE ------------------ */
+function update() {
   if (
     currentLat === null ||
     currentLon === null ||
     compassHeading === null
   ) return;
 
-  const dist = haversine(currentLat, currentLon, TARGET_LAT, TARGET_LON);
-  const bear = bearing(currentLat, currentLon, TARGET_LAT, TARGET_LON);
+  const dist = haversine(
+    currentLat,
+    currentLon,
+    TARGET_LAT,
+    TARGET_LON
+  );
 
-  const targetAngle = (bear - compassHeading + 360) % 360;
+  const bear = bearing(
+    currentLat,
+    currentLon,
+    TARGET_LAT,
+    TARGET_LON
+  );
 
-  // smoothing
-  smoothedAngle += (targetAngle - smoothedAngle) * 0.15;
+  const relative = (bear - compassHeading + 360) % 360;
+  smoothAngle += (relative - smoothAngle) * 0.15;
 
   arrow.style.transform =
-    `translate(-50%, -100%) rotate(${smoothedAngle}deg)`;
+    `translateX(-50%) rotate(${smoothAngle}deg)`;
 
-  distanceEl.textContent =
+  document.getElementById("target").textContent =
+    `Target: ${TARGET_LAT}, ${TARGET_LON}`;
+
+  document.getElementById("distance").textContent =
     dist < 1000
       ? `Distance: ${dist.toFixed(1)} m`
-      : `Distance: ${(dist / 1000).toFixed(2)} km`;
+      : `Distance: ${(dist / 1000).toFixed(3)} km`;
 
-  headingEl.textContent =
-    `Bearing: ${bear.toFixed(0)}° | Compass: ${compassHeading.toFixed(0)}°`;
+  document.getElementById("bearing").textContent =
+    `Bearing: ${bear.toFixed(1)}°`;
+
+  document.getElementById("compass").textContent =
+    `Compass: ${compassHeading.toFixed(1)}°`;
 }
 
-/* ---------- PERMISSIONS ---------- */
-async function startScanner() {
-  if (!navigator.geolocation) {
-    alert("Geolocation not supported");
-    return;
-  }
-
+/* ------------------ START ------------------ */
+async function start() {
   if (
     typeof DeviceOrientationEvent !== "undefined" &&
     typeof DeviceOrientationEvent.requestPermission === "function"
@@ -196,13 +233,13 @@ async function startScanner() {
     }
   }
 
-  window.addEventListener("deviceorientationabsolute", handleOrientation, true);
-  window.addEventListener("deviceorientation", handleOrientation, true);
+  window.addEventListener("deviceorientation", onOrientation, true);
+  window.addEventListener("deviceorientationabsolute", onOrientation, true);
 
   startGPS();
 }
 
-document.getElementById("start").addEventListener("click", startScanner);
+document.getElementById("start").addEventListener("click", start);
 </script>
 
 </body>
