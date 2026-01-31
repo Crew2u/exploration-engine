@@ -1,1 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Rock Hunt</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <h1>Prospecting Locations</h1>
+  <div id="locations"></div>
+  <button id="backBtn" style="display:none;">Back to Detector</button>
 
+  <div id="detector" style="display:none;">
+    <h2>Prospecting Detector</h2>
+    <div id="status">Initializing...</div>
+    <div id="distance">Distance: -- m</div>
+    <div id="hotCold"><div id="hotFill"></div></div>
+    <div id="compass"><img src="images/arrow.png" id="arrow"></div>
+    <button id="scanRockBtn">Scan Rock</button>
+  </div>
+
+  <script src="locations.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
