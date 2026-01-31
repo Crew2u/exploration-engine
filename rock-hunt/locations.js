@@ -1,13 +1,15 @@
-// List of prospecting zones
-// Add as many as you like; easy to change coordinates
+// ===============================
+// PROSPECTING LOCATIONS CONFIG
+// Edit this file to move hunts or add test zones
+// ===============================
 
 const PROSPECTING_LOCATIONS = [
   {
     id: "test_zone",
-    name: "Test Zone",
-    lat: -26.409896,   // <-- change this to your current location for testing
-    lng: 152.926777,   // <-- change this to your current location for testing
-    radius: 50       // meters to trigger compass/detector
+    name: "Test Zone (Local)",
+    lat: -26.000000,   // CHANGE to your current latitude
+    lng: 152.000000,   // CHANGE to your current longitude
+    radius: 50
   },
   {
     id: "quartz_ridge",
