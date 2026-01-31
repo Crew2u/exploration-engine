@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Field Scanner</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="background:black;color:#00ff88;font-family:monospace;text-align:center;">
+  <h1>FIELD SCANNER</h1>
+
+  <p>Select module:</p>
+
+  <a href="rock-hunt/" style="color:#00ff88;">▶ Rock Prospecting</a><br><br>
+  <a href="ghost-hunt/" style="color:#00ff88;">▶ Ghost Hunt</a>
+</body>
+</html>
