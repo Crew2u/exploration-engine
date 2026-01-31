@@ -1,251 +1,208 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Rock Prospecting Scanner</title>
+<meta charset="utf-8">
+<title>Prospecting Scanner</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 
 <style>
-body {
-  margin: 0;
-  font-family: Arial, sans-serif;
-  background: #0b0f14;
-  color: #00ffcc;
-  text-align: center;
-}
+  body {
+    margin: 0;
+    font-family: system-ui, sans-serif;
+    background: #0a0a0a;
+    color: #00ffcc;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+  }
 
-h1 { margin-top: 20px; }
+  h1 { margin: 0.2em 0; }
 
-button {
-  padding: 15px;
-  margin: 10px;
-  font-size: 18px;
-  background: #00ffcc;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-}
+  #scanner {
+    width: 220px;
+    height: 220px;
+    border-radius: 50%;
+    border: 3px solid #00ffcc;
+    position: relative;
+    margin: 20px;
+  }
 
-#detector { display: none; }
+  #arrow {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 6px;
+    height: 90px;
+    background: #ff4444;
+    transform-origin: bottom center;
+    transform: translate(-50%, -100%) rotate(0deg);
+    border-radius: 3px;
+  }
 
-#hotBar {
-  width: 90%;
-  height: 40px;
-  background: #222;
-  margin: 20px auto;
-  border-radius: 20px;
-  overflow: hidden;
-  box-shadow: 0 0 15px #00ffcc70 inset;
-}
+  #info {
+    text-align: center;
+    font-size: 1.1em;
+  }
 
-#hotFill {
-  height: 100%;
-  width: 0%;
-  background: linear-gradient(to right, blue, yellow, red);
-  transition: width 0.2s ease;
-}
-
-#arrow {
-  font-size: 80px;
-  margin: 20px;
-  transition: transform 0.2s ease;
-}
-
-.small {
-  font-size: 14px;
-  opacity: 0.8;
-}
+  button {
+    margin-top: 20px;
+    padding: 12px 20px;
+    font-size: 1em;
+    background: #00ffcc;
+    border: none;
+    border-radius: 8px;
+    color: #000;
+  }
 </style>
 </head>
-
 <body>
 
-<h1>FIELD PROSPECTING SCANNER</h1>
+<h1>Prospecting Scanner</h1>
 
-<div id="locations">
-  <p>Select Prospecting Zone</p>
+<div id="scanner">
+  <div id="arrow"></div>
 </div>
 
-<div id="detector">
-  <div id="arrow">⬆️</div>
-  <div id="hotBar"><div id="hotFill"></div></div>
-  <p id="status">Initializing…</p>
-  <p id="distance"></p>
-
-  <button id="scanRockBtn">SCAN ROCK</button><br>
-  <button id="backBtn">CHANGE ZONE</button>
+<div id="info">
+  <div id="distance">Distance: —</div>
+  <div id="heading">Heading: —</div>
 </div>
+
+<button id="start">Activate Scanner</button>
 
 <script>
-// ===============================
-// PROSPECTING ZONES
-// ===============================
-const PROSPECTING_LOCATIONS = [
-  { name: "TEST ZONE (HOME)", lat: -26.650000, lng: 152.950000 },
-  { name: "FOREST RIDGE", lat: -26.641234, lng: 152.932345 }
-];
+/* ================= CONFIG ================= */
+const TARGET_LAT = -26.640123;   // <-- set your target
+const TARGET_LON = 152.934567;
+/* ========================================== */
 
-// ===============================
-// ELEMENTS
-// ===============================
-const locationsDiv = document.getElementById("locations");
-const detectorDiv = document.getElementById("detector");
-const statusEl = document.getElementById("status");
-const distanceEl = document.getElementById("distance");
-const hotFill = document.getElementById("hotFill");
+let currentLat = null;
+let currentLon = null;
+let compassHeading = null;
+let smoothedAngle = 0;
+
 const arrow = document.getElementById("arrow");
-const scanRockBtn = document.getElementById("scanRockBtn");
-const backBtn = document.getElementById("backBtn");
+const distanceEl = document.getElementById("distance");
+const headingEl = document.getElementById("heading");
 
-let selectedZone = null;
-let currentPosition = null;
-let gpsWatchId = null;
+/* ---------- GEOLOCATION ---------- */
+function startGPS() {
+  navigator.geolocation.watchPosition(
+    pos => {
+      currentLat = pos.coords.latitude;
+      currentLon = pos.coords.longitude;
+      updateUI();
+    },
+    err => alert("GPS error: " + err.message),
+    {
+      enableHighAccuracy: true,
+      maximumAge: 500,
+      timeout: 10000
+    }
+  );
+}
 
-// ===============================
-// BUILD ZONE BUTTONS
-// ===============================
-PROSPECTING_LOCATIONS.forEach(zone => {
-  const btn = document.createElement("button");
-  btn.innerText = zone.name;
-  btn.onclick = () => selectZone(zone);
-  locationsDiv.appendChild(btn);
-});
+/* ---------- DISTANCE (HAVERSINE) ---------- */
+function haversine(lat1, lon1, lat2, lon2) {
+  const R = 6371000;
+  const toRad = d => d * Math.PI / 180;
 
-// ===============================
-// SELECT ZONE
-// ===============================
-function selectZone(zone) {
-  selectedZone = zone;
-  locationsDiv.style.display = "none";
-  detectorDiv.style.display = "block";
-  statusEl.innerText = "Requesting GPS…";
+  const dLat = toRad(lat2 - lat1);
+  const dLon = toRad(lon2 - lon1);
+
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(toRad(lat1)) *
+    Math.cos(toRad(lat2)) *
+    Math.sin(dLon / 2) ** 2;
+
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+/* ---------- BEARING ---------- */
+function bearing(lat1, lon1, lat2, lon2) {
+  const toRad = d => d * Math.PI / 180;
+  const toDeg = r => (r * 180 / Math.PI + 360) % 360;
+
+  const y = Math.sin(toRad(lon2 - lon1)) * Math.cos(toRad(lat2));
+  const x =
+    Math.cos(toRad(lat1)) * Math.sin(toRad(lat2)) -
+    Math.sin(toRad(lat1)) * Math.cos(toRad(lat2)) *
+    Math.cos(toRad(lon2 - lon1));
+
+  return toDeg(Math.atan2(y, x));
+}
+
+/* ---------- COMPASS ---------- */
+function handleOrientation(e) {
+  let heading;
+
+  if (typeof e.webkitCompassHeading === "number") {
+    heading = e.webkitCompassHeading; // iOS
+  } else if (e.absolute && e.alpha !== null) {
+    heading = 360 - e.alpha; // Android
+  } else {
+    return;
+  }
+
+  compassHeading = heading;
+  updateUI();
+}
+
+/* ---------- UI UPDATE ---------- */
+function updateUI() {
+  if (
+    currentLat === null ||
+    currentLon === null ||
+    compassHeading === null
+  ) return;
+
+  const dist = haversine(currentLat, currentLon, TARGET_LAT, TARGET_LON);
+  const bear = bearing(currentLat, currentLon, TARGET_LAT, TARGET_LON);
+
+  const targetAngle = (bear - compassHeading + 360) % 360;
+
+  // smoothing
+  smoothedAngle += (targetAngle - smoothedAngle) * 0.15;
+
+  arrow.style.transform =
+    `translate(-50%, -100%) rotate(${smoothedAngle}deg)`;
+
+  distanceEl.textContent =
+    dist < 1000
+      ? `Distance: ${dist.toFixed(1)} m`
+      : `Distance: ${(dist / 1000).toFixed(2)} km`;
+
+  headingEl.textContent =
+    `Bearing: ${bear.toFixed(0)}° | Compass: ${compassHeading.toFixed(0)}°`;
+}
+
+/* ---------- PERMISSIONS ---------- */
+async function startScanner() {
+  if (!navigator.geolocation) {
+    alert("Geolocation not supported");
+    return;
+  }
+
+  if (
+    typeof DeviceOrientationEvent !== "undefined" &&
+    typeof DeviceOrientationEvent.requestPermission === "function"
+  ) {
+    const res = await DeviceOrientationEvent.requestPermission();
+    if (res !== "granted") {
+      alert("Compass permission denied");
+      return;
+    }
+  }
+
+  window.addEventListener("deviceorientationabsolute", handleOrientation, true);
+  window.addEventListener("deviceorientation", handleOrientation, true);
 
   startGPS();
 }
 
-// ===============================
-// START GPS
-// ===============================
-function startGPS() {
-  if (!navigator.geolocation) {
-    statusEl.innerText = "GPS not supported on this device";
-    return;
-  }
-
-  // Prompt for permission, then start watch
-  navigator.geolocation.getCurrentPosition(
-    pos => {
-      positionUpdate(pos);
-      gpsWatchId = navigator.geolocation.watchPosition(positionUpdate, gpsError, { enableHighAccuracy: true });
-    },
-    gpsError,
-    { enableHighAccuracy: true }
-  );
-}
-
-// ===============================
-// GPS UPDATE
-// ===============================
-function positionUpdate(pos) {
-  currentPosition = { lat: pos.coords.latitude, lng: pos.coords.longitude };
-
-  const distance = getDistance(currentPosition.lat, currentPosition.lng, selectedZone.lat, selectedZone.lng);
-
-  distanceEl.innerText = `Distance: ${Math.round(distance)} m`;
-  updateDetector(distance);
-}
-
-// ===============================
-// HOT / COLD DETECTOR + VIBRATION + HUM
-// ===============================
-function updateDetector(distance) {
-  const heat = Math.max(0, 100 - distance);
-  hotFill.style.width = Math.min(100, heat) + "%";
-
-  if (distance < 10) {
-    statusEl.innerText = "🔥 HIGH MINERAL SIGNAL — SEARCH AREA";
-    navigator.vibrate && navigator.vibrate([100, 50, 100]); // subtle pulse
-    playHum();
-  } else if (distance < 50) {
-    statusEl.innerText = "Signal increasing…";
-  } else {
-    statusEl.innerText = "Scanning…";
-  }
-}
-
-// Hum feedback (simple beep via AudioContext)
-let humCtx;
-function playHum() {
-  if (!humCtx) humCtx = new (window.AudioContext || window.webkitAudioContext)();
-  const osc = humCtx.createOscillator();
-  const gain = humCtx.createGain();
-  osc.type = "sine";
-  osc.frequency.value = 200; // low hum
-  gain.gain.value = 0.05;
-  osc.connect(gain);
-  gain.connect(humCtx.destination);
-  osc.start();
-  osc.stop(humCtx.currentTime + 0.2);
-}
-
-// ===============================
-// DISTANCE CALC (FIXED HAVERSINE)
-// ===============================
-function getDistance(lat1, lon1, lat2, lon2) {
-  const R = 6371000; // meters
-  const φ1 = lat1 * Math.PI / 180;
-  const φ2 = lat2 * Math.PI / 180;
-  const Δφ = (lat2 - lat1) * Math.PI / 180;
-  const Δλ = (lon2 - lon1) * Math.PI / 180;
-
-  const a = Math.sin(Δφ / 2) ** 2 +
-            Math.cos(φ1) * Math.cos(φ2) *
-            Math.sin(Δλ / 2) ** 2;
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-
-  return R * c;
-}
-
-// ===============================
-// COMPASS
-// ===============================
-window.addEventListener("deviceorientation", e => {
-  if (!currentPosition || e.alpha === null) return;
-
-  const heading = e.alpha;
-  const bearing = calculateBearing(currentPosition.lat, currentPosition.lng, selectedZone.lat, selectedZone.lng);
-
-  arrow.style.transform = `rotate(${bearing - heading}deg)`;
-});
-
-function calculateBearing(lat1, lon1, lat2, lon2) {
-  const y = Math.sin((lon2 - lon1) * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180);
-  const x = Math.cos(lat1 * Math.PI / 180) * Math.sin(lat2 * Math.PI / 180) -
-            Math.sin(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-            Math.cos((lon2 - lon1) * Math.PI / 180);
-  return (Math.atan2(y, x) * 180 / Math.PI + 360) % 360;
-}
-
-// ===============================
-// GPS ERRORS
-// ===============================
-function gpsError(err) {
-  if (err.code === 1) statusEl.innerText = "Location access denied. Enable GPS permissions and reload.";
-  else statusEl.innerText = "GPS error: " + err.message;
-}
-
-// ===============================
-// SCAN ROCK
-// ===============================
-scanRockBtn.onclick = () => window.location.href = "https://challengeaccepted.quest/scan";
-
-// ===============================
-// BACK
-// ===============================
-backBtn.onclick = () => {
-  detectorDiv.style.display = "none";
-  locationsDiv.style.display = "block";
-};
+document.getElementById("start").addEventListener("click", startScanner);
 </script>
 
 </body>
