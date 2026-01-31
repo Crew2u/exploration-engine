@@ -9,13 +9,14 @@ body { margin:0; font-family:system-ui,sans-serif; background:#0b0b0b; color:#00
 h1 { margin:10px 0; text-align:center; }
 #scanner { width:300px; height:300px; border-radius:50%; border:3px solid #00ffcc; position:relative; margin:15px; background:radial-gradient(circle at center, #003300 0%, #001100 80%); overflow:hidden; }
 #arrow { position:absolute; bottom:50%; left:50%; width:6px; height:120px; background:#ff4444; transform-origin:bottom center; transform:translateX(-50%) rotate(0deg); border-radius:4px; transition:transform 0.1s linear; }
-.rock { position:absolute; width:20px; height:20px; border-radius:50%; background:#cccc00; box-shadow:0 0 6px #ffff00; cursor:pointer; }
+.rock { position:absolute; width:24px; height:24px; border-radius:50%; box-shadow:0 0 6px #ffff00; cursor:pointer; }
 #info { width:90%; max-width:360px; font-size:0.95em; line-height:1.4; text-align:center; margin-top:10px; }
 .box { border:1px solid #00ffcc44; padding:8px; margin:6px 0; border-radius:6px; }
 button, select { margin:10px 0; padding:12px 22px; font-size:1em; border-radius:8px; border:none; background:#00ffcc; color:#000; cursor:pointer; }
 select { width:90%; max-width:360px; }
 #proximityMeter { width: 90%; max-width:360px; height:20px; background:#004422; border:1px solid #00ff44; border-radius:10px; overflow:hidden; margin-top:10px; }
 #proximityFill { width:0%; height:100%; background:#ff4444; transition: width 0.2s ease; }
+#scanRock { background:#ff4444; color:#fff; font-weight:bold; width:90%; max-width:360px; }
 </style>
 </head>
 <body>
@@ -45,9 +46,8 @@ select { width:90%; max-width:360px; }
 </div>
 
 <button id="start">Activate Scanner</button>
-<button id="scanRock" disabled>Scan Rock</button>
+<button id="scanRock">Scan Rock</button>
 
-<!-- ================= LOCATIONS.JS ================= -->
 <script src="locations.js?v=3"></script>
 
 <script>
@@ -56,8 +56,6 @@ function initScanner() {
     alert("No PROSPECTING_LOCATIONS found!");
     return;
   }
-
-  console.log("Locations loaded:", PROSPECTING_LOCATIONS);
 
   let TARGET = PROSPECTING_LOCATIONS[0];
   let TARGET_LAT = TARGET.lat;
@@ -72,7 +70,7 @@ function initScanner() {
   const scanRockBtn = document.getElementById("scanRock");
   const scannerDiv = document.getElementById("scanner");
 
-  /* --------------- Dropdown --------------- */
+  // Dropdown locations
   select.innerHTML = '';
   PROSPECTING_LOCATIONS.forEach((loc,i)=>{
     const opt = document.createElement('option');
@@ -90,13 +88,13 @@ function initScanner() {
     update();
   });
 
-  /* --------------- Haversine / Bearing --------------- */
+  // Haversine/Bearing
   const toRad=d=>d*Math.PI/180;
   const toDeg=r=>(r*180/Math.PI+360)%360;
-  function haversine(lat1,lon1,lat2,lon2){ const R=6371000, dLat=toRad(lat2-lat1), dLon=toRad(lon2-lon1); const a=Math.sin(dLat/2)**2+Math.cos(toRad(lat1))*Math.cos(toRad(lat2))*Math.sin(dLon/2)**2; return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a)); }
-  function bearing(lat1,lon1,lat2,lon2){ const y=Math.sin(toRad(lon2-lon1))*Math.cos(toRad(lat2)), x=Math.cos(toRad(lat1))*Math.sin(toRad(lat2))-Math.sin(toRad(lat1))*Math.cos(toRad(lat2))*Math.cos(toRad(lon2-lon1)); return toDeg(Math.atan2(y,x)); }
+  function haversine(lat1,lon1,lat2,lon2){ const R=6371000,dLat=toRad(lat2-lat1),dLon=toRad(lon2-lon1); const a=Math.sin(dLat/2)**2+Math.cos(toRad(lat1))*Math.cos(toRad(lat2))*Math.sin(dLon/2)**2; return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a)); }
+  function bearing(lat1,lon1,lat2,lon2){ const y=Math.sin(toRad(lon2-lon1))*Math.cos(toRad(lat2)),x=Math.cos(toRad(lat1))*Math.sin(toRad(lat2))-Math.sin(toRad(lat1))*Math.cos(toRad(lat2))*Math.cos(toRad(lon2-lon1); return toDeg(Math.atan2(y,x)); }
 
-  /* --------------- GPS --------------- */
+  // GPS
   function startGPS() {
     if(!navigator.geolocation){ alert("Geolocation unsupported"); return; }
     navigator.geolocation.watchPosition(pos=>{
@@ -108,7 +106,7 @@ function initScanner() {
     }, err=>alert("GPS error:"+err.message), {enableHighAccuracy:true, maximumAge:0, timeout:10000});
   }
 
-  /* --------------- Compass --------------- */
+  // Compass
   function onOrientation(e){
     let heading=null;
     if(typeof e.webkitCompassHeading==="number") heading=e.webkitCompassHeading;
@@ -118,21 +116,21 @@ function initScanner() {
     update();
   }
 
-  /* --------------- Rocks --------------- */
-  const rockImages = ['#ffcc00','#cccccc','#44ccff','#ff44ff']; // colors
-  const rocks = [];
+  // Rocks
+  const rockImages=['#ffcc00','#cccccc','#44ccff','#ff44ff'];
+  const rocks=[];
   function spawnRocks(n=8){
     rocks.forEach(r=>r.remove());
     rocks.length=0;
     for(let i=0;i<n;i++){
       const rock = document.createElement('div');
       rock.className='rock';
-      rock.style.background = rockImages[Math.floor(Math.random()*rockImages.length)];
-      rock.style.left = (Math.random()*260+20)+'px';
-      rock.style.top = (Math.random()*260+20)+'px';
-      rock.dataset.rockId = ['G','S','C','M'][Math.floor(Math.random()*4)]+Math.floor(Math.random()*1000);
+      rock.style.background=rockImages[Math.floor(Math.random()*rockImages.length)];
+      rock.style.left=(Math.random()*260+20)+'px';
+      rock.style.top=(Math.random()*260+20)+'px';
+      rock.dataset.rockId=['G','S','C','M'][Math.floor(Math.random()*4)]+Math.floor(Math.random()*1000);
       rock.addEventListener('click', ()=>{
-        const qr = rock.dataset.rockId;
+        const qr=rock.dataset.rockId;
         window.open(`https://crew2u.wixsite.com/rockhunt?rock=${qr}`, '_blank');
       });
       scannerDiv.appendChild(rock);
@@ -140,15 +138,12 @@ function initScanner() {
     }
   }
 
-  /* --------------- Update --------------- */
   function update(){
     if(currentLat===null||currentLon===null||compassHeading===null) return;
-
     if(TARGET.id==='test_zone'&&(TARGET_LAT===null||TARGET_LON===null)){
       TARGET_LAT=currentLat; TARGET_LON=currentLon;
       TARGET_NAME='Test Zone (Your Home)';
     }
-
     const dist=haversine(currentLat,currentLon,TARGET_LAT,TARGET_LON);
     const bear=bearing(currentLat,currentLon,TARGET_LAT,TARGET_LON);
     const relative=(bear-compassHeading+360)%360;
@@ -168,19 +163,12 @@ function initScanner() {
     else hotcold='🥶 Very Cold';
     document.getElementById("hotcold").textContent=`Proximity: ${hotcold}`;
 
-    const pct = Math.min(1,200/dist);
+    const pct=Math.min(1,200/dist);
     proximityFill.style.width=`${(pct*100).toFixed(1)}%`;
 
-    // Heartbeat / buzz
-    if(dist<200){
-      const freq=1+(200-dist)/50;
-      if(navigator.vibrate) navigator.vibrate(freq>1?[50]:[]);
-    }
-
-    scanRockBtn.disabled = dist>50; // enable scan only close
+    scanRockBtn.disabled = false; // always visible
   }
 
-  /* --------------- START --------------- */
   async function start(){
     spawnRocks();
     if(typeof DeviceOrientationEvent!=="undefined" && typeof DeviceOrientationEvent.requestPermission==="function"){
@@ -195,13 +183,10 @@ function initScanner() {
   document.getElementById("start").addEventListener("click",start);
 
   scanRockBtn.addEventListener('click', ()=>{
-    alert("Scan rock button clicked — opens rock page with nearest rock ID automatically");
-    // In real QR implementation, this should use the scanned QR code.
-    // For test, pick a random rock:
     if(rocks.length>0){
       const qr = rocks[Math.floor(Math.random()*rocks.length)].dataset.rockId;
       window.open(`https://crew2u.wixsite.com/rockhunt?rock=${qr}`, '_blank');
-    }
+    } else alert("No rocks found!");
   });
 
 }
