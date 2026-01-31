@@ -1,14 +1,13 @@
 // ===============================
 // PROSPECTING LOCATIONS CONFIG
-// Edit this file to move hunts or add test zones
 // ===============================
 
 const PROSPECTING_LOCATIONS = [
   {
     id: "test_zone",
-    name: "Test Zone (Local)",
-    lat: -26.409830,   // CHANGE to your current latitude
-    lng: 152.926372,   // CHANGE to your current longitude
+    name: "Test Zone (Your Home)",
+    lat: null,   // will be set dynamically by scanner to your current GPS
+    lng: null,
     radius: 30
   },
   {
