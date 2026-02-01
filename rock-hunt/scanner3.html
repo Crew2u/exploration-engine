@@ -132,7 +132,6 @@ function initScanner(){
   
   let TARGET_INDEX=0, currentLat=null, currentLon=null, compassHeading=null, smoothAngle=0, sweepAngle=0;
   let rocks=[], cameraStream=null, qrActive=false;
-  const audioCtx = new (window.AudioContext || window.webkitAudioContext)(); // sonar audio
 
   const arrow=document.getElementById("arrow");
   const select=document.getElementById("locationSelect");
@@ -188,17 +187,9 @@ function initScanner(){
       rock.style.transform=`translate(${rock.dataset.x}px,${rock.dataset.y}px) scale(${scale})`;
       rock.style.opacity=0.3+0.7*(1-normalized);
 
-      if(distToTarget<30) playPing(0.05 + 0.5*(1-normalized));
+      // Intermittent vibration when close
+      if(distToTarget<15 && navigator.vibrate && Math.random()<0.05) navigator.vibrate(120);
     });
-  }
-
-  function playPing(vol){
-    const osc = audioCtx.createOscillator();
-    const gain = audioCtx.createGain();
-    osc.connect(gain); gain.connect(audioCtx.destination);
-    osc.frequency.value = 1000;
-    gain.gain.value = vol;
-    osc.start(); osc.stop(audioCtx.currentTime+0.05);
   }
 
   function update(){
@@ -245,7 +236,7 @@ function initScanner(){
     }
   }
 
-  function triggerVibration(){ if(navigator.vibrate && Math.random()<0.3) navigator.vibrate(150); }
+  function triggerVibration(){ if(navigator.vibrate) navigator.vibrate(150); }
 
   function startGPS(){
     if(!navigator.geolocation){alert("Geolocation unsupported");return;}
