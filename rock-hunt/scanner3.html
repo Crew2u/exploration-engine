@@ -61,6 +61,7 @@ h1 {
 .rock { 
   position:absolute; border-radius:50%; box-shadow:0 0 8px #ffff00,0 0 16px #ffff0055;
   cursor:pointer; z-index:7; 
+  transition: transform 0.05s linear, opacity 0.05s linear;
 }
 
 #qrVideo { display:none; position:absolute; width:360px; height:360px; top:0; left:0; border-radius:50%; object-fit:cover; z-index:0; }
@@ -74,6 +75,13 @@ h1 {
 }
 
 @keyframes scannerPulse { 0% { transform:scale(0.98); opacity:0.7; } 100% { transform:scale(1); opacity:1; } }
+
+#qrPanel { 
+  position:absolute; width:320px; height:180px; bottom:10px; left:50%; transform:translateX(-50%);
+  border:3px solid #00ff44; border-radius:12px; background:#002200bb; z-index:10; display:none; overflow:hidden;
+  box-shadow:0 0 20px #00ff44 inset, 0 0 40px #00ff4488; 
+}
+#qrPanel iframe { width:100%; height:100%; border:none; border-radius:10px; }
 
 #info { width:90%; max-width:360px; font-size:0.9em; line-height:1.4; text-align:center; margin-top:10px; }
 .box { border:1px solid #00ff0044; padding:6px; margin:4px 0; border-radius:6px; background:#00110099; }
@@ -96,6 +104,7 @@ button, select { margin:10px 0; padding:12px 22px; font-size:1em; border-radius:
     <div id="radarRings"></div>
     <div id="arrow"></div>
     <div id="qrOverlay"></div>
+    <div id="qrPanel"><iframe></iframe></div>
   </div>
 </div>
 
@@ -135,6 +144,8 @@ function initScanner(){
   const radarRings=document.getElementById("radarRings");
   const qrVideo=document.getElementById("qrVideo");
   const deviceFrame=document.getElementById("deviceFrame");
+  const qrPanel=document.getElementById("qrPanel");
+  const qrIframe=qrPanel.querySelector("iframe");
 
   function getTarget(){ return PROSPECTING_LOCATIONS[TARGET_INDEX]; }
   function toRad(d){return d*Math.PI/180;}
@@ -155,7 +166,7 @@ function initScanner(){
       rock.style.width='20px'; rock.style.height='20px';
       rock.dataset.angle=Math.random()*2*Math.PI;  
       rock.dataset.radius=Math.random()*80+50;  
-      rock.dataset.x=180; rock.dataset.y=180; // current display position
+      rock.dataset.x=180; rock.dataset.y=180;
       rocks.push(rock);
       scannerDiv.appendChild(rock);
     }
@@ -171,14 +182,12 @@ function initScanner(){
       const targetX=180 + Math.cos(angle-(compassHeading||0)*Math.PI/180)*radius - 10;
       const targetY=180 + Math.sin(angle-(compassHeading||0)*Math.PI/180)*radius - 10;
 
-      // Smooth motion along arc
       rock.dataset.x=rock.dataset.x*0.85 + targetX*0.15;
       rock.dataset.y=rock.dataset.y*0.85 + targetY*0.15;
       const scale=Math.max(0.3, 1-normalized*0.7);
       rock.style.transform=`translate(${rock.dataset.x}px,${rock.dataset.y}px) scale(${scale})`;
       rock.style.opacity=0.3+0.7*(1-normalized);
 
-      // sonar ping
       if(distToTarget<30) playPing(0.05 + 0.5*(1-normalized));
     });
   }
@@ -186,8 +195,7 @@ function initScanner(){
   function playPing(vol){
     const osc = audioCtx.createOscillator();
     const gain = audioCtx.createGain();
-    osc.connect(gain);
-    gain.connect(audioCtx.destination);
+    osc.connect(gain); gain.connect(audioCtx.destination);
     osc.frequency.value = 1000;
     gain.gain.value = vol;
     osc.start(); osc.stop(audioCtx.currentTime+0.05);
@@ -280,7 +288,8 @@ function initScanner(){
           const code=jsQR(imageData.data,canvas.width,canvas.height);
           if(code && code.data){
             qrVideo.srcObject.getTracks().forEach(t=>t.stop());
-            window.location.href=`https://www.challengeaccepted.quest/prospect-scan?rock=${code.data}`;
+            qrIframe.src=`https://www.challengeaccepted.quest/prospect-scan?rock=${code.data}`;
+            qrPanel.style.display='block';
             return;
           }
         }
