@@ -1,48 +1,73 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8">
-<title>Prospecting Scanner</title>
+<meta charset="UTF-8">
+<title>Futuristic Prospecting Scanner</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <style>
+/* ===== Body & HUD ===== */
 body {
   margin:0; font-family:system-ui,sans-serif; background:#0b0b0b; color:#00ffcc;
-  display:flex; flex-direction:column; align-items:center; padding:10px;
+  display:flex; flex-direction:column; align-items:center; justify-content:flex-start; padding:10px;
 }
-h1 { margin:10px 0; text-align:center; text-shadow:0 0 6px #00ffcc; }
-#scanner {
-  width:300px; height:300px; border-radius:50%; border:3px solid #00ffcc;
-  position:relative; margin:15px; background:radial-gradient(circle at center, #001100 0%, #003300 70%);
-  overflow:hidden; box-shadow:0 0 20px #00ffcc inset, 0 0 30px #00ffcc;
+h1 {
+  margin:10px 0; text-align:center; text-shadow:0 0 8px #00ffcc,0 0 16px #00ffcc55;
 }
+#scanner-container {
+  width:320px; height:320px; border-radius:50%; position:relative; margin:15px;
+  background:radial-gradient(circle at center, #001100 0%, #002200 70%);
+  box-shadow: inset 0 0 30px #00ffcc44, 0 0 40px #00ffcc88;
+  overflow:hidden;
+  border:3px solid #00ffcc;
+}
+/* Radar Sweep */
 #radarSweep {
-  position:absolute; width:300px; height:300px; border-radius:50%;
-  background:conic-gradient(rgba(0,255,0,0.3) 0deg, rgba(0,255,0,0) 30deg, rgba(0,255,0,0) 360deg);
-  transform:rotate(0deg); pointer-events:none;
+  position:absolute; width:100%; height:100%; border-radius:50%;
+  background:conic-gradient(rgba(0,255,0,0.25) 0deg, rgba(0,255,0,0) 30deg, rgba(0,255,0,0) 360deg);
+  pointer-events:none;
+  transform:rotate(0deg);
+  z-index:2;
 }
-#arrow { position:absolute; bottom:50%; left:50%; width:6px; height:120px;
-  background:#ff4444; transform-origin:bottom center; transform:translateX(-50%) rotate(0deg);
-  border-radius:4px; transition:transform 0.1s linear; z-index:5;
+/* Arrow pointing to target */
+#arrow {
+  position:absolute; bottom:50%; left:50%; width:6px; height:120px;
+  background:#ff4444; transform-origin:bottom center; border-radius:4px;
+  transition:transform 0.1s linear; z-index:5;
 }
-.rock { position:absolute; width:24px; height:24px; border-radius:50%; box-shadow:0 0 8px #ffff00; cursor:pointer; z-index:6; }
-#info { width:90%; max-width:360px; font-size:0.95em; line-height:1.4; text-align:center; margin-top:10px; }
-.box { border:1px solid #00ffcc44; padding:8px; margin:6px 0; border-radius:6px; }
+/* Rocks blips */
+.rock {
+  position:absolute; width:20px; height:20px; border-radius:50%;
+  box-shadow:0 0 8px #ffff00,0 0 16px #ffff0055; cursor:pointer; z-index:6;
+}
+/* Info Panels */
+#info { width:90%; max-width:360px; font-size:0.9em; line-height:1.4; text-align:center; margin-top:10px; }
+.box { border:1px solid #00ffcc44; padding:6px; margin:4px 0; border-radius:6px; background:#00110099; }
+/* Buttons */
 button, select { margin:10px 0; padding:12px 22px; font-size:1em; border-radius:8px; border:none; background:#00ffcc; color:#000; cursor:pointer; }
-select { width:90%; max-width:360px; }
-#proximityMeter { width:90%; max-width:360px; height:20px; background:#004422; border:1px solid #00ff44; border-radius:10px; overflow:hidden; margin-top:10px; }
-#proximityFill { width:0%; height:100%; background:#ff4444; transition: width 0.2s ease; }
 #scanRock { background:#ff4444; color:#fff; font-weight:bold; width:90%; max-width:360px; box-shadow:0 0 8px #ff4444; }
+/* Proximity meter */
+#proximityMeter { width:90%; max-width:360px; height:20px; background:#004422; border:1px solid #00ff44; border-radius:10px; overflow:hidden; margin-top:6px; }
+#proximityFill { width:0%; height:100%; background:#ff4444; transition:width 0.2s ease; }
+/* Futuristic overlay pulses */
+#overlayPulse {
+  position:absolute; width:320px; height:320px; border-radius:50%; top:0; left:0;
+  box-shadow:0 0 40px #00ff44 inset, 0 0 60px #00ff4488 inset;
+  pointer-events:none; z-index:1;
+}
+/* Camera video for QR */
+#qrVideo {
+  display:none; width:100%; max-width:320px; border-radius:12px; margin-top:10px;
+}
 </style>
 </head>
 <body>
 
-<h1>Prospecting Scanner</h1>
+<h1>Futuristic Prospecting Scanner</h1>
 
-<select id="locationSelect">
-  <option>Loading locations...</option>
-</select>
+<select id="locationSelect"><option>Loading locations...</option></select>
 
-<div id="scanner">
+<div id="scanner-container">
+  <div id="overlayPulse"></div>
   <div id="radarSweep"></div>
   <div id="arrow"></div>
 </div>
@@ -57,20 +82,20 @@ select { width:90%; max-width:360px; }
   <div class="box" id="hotcold">Proximity: —</div>
 </div>
 
-<div id="proximityMeter">
-  <div id="proximityFill"></div>
-</div>
+<div id="proximityMeter"><div id="proximityFill"></div></div>
 
 <button id="start">Activate Scanner</button>
-<button id="scanRock">Scan Rock</button>
+<button id="scanRock">Scan QR Rock</button>
 
-<script src="locations.js?v=3"></script>
+<video id="qrVideo" autoplay></video>
+
+<script src="locations.js?v=5"></script>
+<script src="https://unpkg.com/jsqr/dist/jsQR.js"></script>
 
 <script>
 function initScanner() {
-  if (!Array.isArray(PROSPECTING_LOCATIONS) || PROSPECTING_LOCATIONS.length === 0) {
-    alert("No PROSPECTING_LOCATIONS found!");
-    return;
+  if(!Array.isArray(PROSPECTING_LOCATIONS)||PROSPECTING_LOCATIONS.length===0){
+    alert("No PROSPECTING_LOCATIONS found!"); return;
   }
 
   let TARGET = PROSPECTING_LOCATIONS[0];
@@ -79,88 +104,75 @@ function initScanner() {
   let TARGET_NAME = TARGET.name;
 
   let currentLat=null, currentLon=null, compassHeading=null, smoothAngle=0;
+  const arrow=document.getElementById("arrow");
+  const select=document.getElementById("locationSelect");
+  const proximityFill=document.getElementById("proximityFill");
+  const scanRockBtn=document.getElementById("scanRock");
+  const scannerDiv=document.getElementById("scanner-container");
+  const radarSweep=document.getElementById("radarSweep");
+  const qrVideo=document.getElementById("qrVideo");
 
-  const arrow = document.getElementById("arrow");
-  const select = document.getElementById("locationSelect");
-  const proximityFill = document.getElementById("proximityFill");
-  const scanRockBtn = document.getElementById("scanRock");
-  const scannerDiv = document.getElementById("scanner");
-  const radarSweep = document.getElementById("radarSweep");
   let sweepAngle=0;
+  let rocks=[];
 
   // Dropdown
-  select.innerHTML = '';
+  select.innerHTML="";
   PROSPECTING_LOCATIONS.forEach((loc,i)=>{
-    const opt = document.createElement('option');
-    opt.value = i; opt.textContent=loc.name;
+    const opt=document.createElement('option'); opt.value=i; opt.textContent=loc.name;
     select.appendChild(opt);
   });
   select.value=0;
-  select.addEventListener('change', ()=>{
-    const idx = parseInt(select.value);
-    TARGET = PROSPECTING_LOCATIONS[idx];
-    TARGET_LAT = TARGET.lat;
-    TARGET_LON = TARGET.lng;
-    TARGET_NAME = TARGET.name;
+  select.addEventListener('change',()=>{
+    const idx=parseInt(select.value);
+    TARGET=PROSPECTING_LOCATIONS[idx]; TARGET_LAT=TARGET.lat; TARGET_LON=TARGET.lng; TARGET_NAME=TARGET.name;
     update();
   });
 
-  // Haversine / Bearing
   const toRad=d=>d*Math.PI/180;
   const toDeg=r=>(r*180/Math.PI+360)%360;
-  function haversine(lat1,lon1,lat2,lon2){ const R=6371000,dLat=toRad(lat2-lat1),dLon=toRad(lon2-lon1); const a=Math.sin(dLat/2)**2+Math.cos(toRad(lat1))*Math.cos(toRad(lat2))*Math.sin(dLon/2)**2; return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a)); }
-  function bearing(lat1,lon1,lat2,lon2){ const y=Math.sin(toRad(lon2-lon1))*Math.cos(toRad(lat2)), x=Math.cos(toRad(lat1))*Math.sin(toRad(lat2))-Math.sin(toRad(lat1))*Math.cos(toRad(lat2))*Math.cos(toRad(lon2-lon1)); return toDeg(Math.atan2(y,x)); }
+  function haversine(lat1,lon1,lat2,lon2){const R=6371000,dLat=toRad(lat2-lat1),dLon=toRad(lon2-lon1);const a=Math.sin(dLat/2)**2+Math.cos(toRad(lat1))*Math.cos(toRad(lat2))*Math.sin(dLon/2)**2;return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));}
+  function bearing(lat1,lon1,lat2,lon2){const y=Math.sin(toRad(lon2-lon1))*Math.cos(toRad(lat2)),x=Math.cos(toRad(lat1))*Math.sin(toRad(lat2))-Math.sin(toRad(lat1))*Math.cos(toRad(lat2))*Math.cos(toRad(lon2-lon1));return toDeg(Math.atan2(y,x));}
 
-  // GPS
-  function startGPS() {
-    if(!navigator.geolocation){ alert("Geolocation unsupported"); return; }
+  function startGPS(){
+    if(!navigator.geolocation){alert("Geolocation unsupported");return;}
     navigator.geolocation.watchPosition(pos=>{
-      currentLat=pos.coords.latitude;
-      currentLon=pos.coords.longitude;
+      currentLat=pos.coords.latitude; currentLon=pos.coords.longitude;
       document.getElementById("gps").textContent=`You: ${currentLat.toFixed(6)}, ${currentLon.toFixed(6)}`;
       document.getElementById("accuracy").textContent=`Accuracy: ±${pos.coords.accuracy.toFixed(1)} m`;
       update();
-    }, err=>alert("GPS error:"+err.message), {enableHighAccuracy:true, maximumAge:0, timeout:10000});
+    },err=>alert("GPS error:"+err.message),{enableHighAccuracy:true,maximumAge:0,timeout:10000});
   }
 
-  // Compass
   function onOrientation(e){
     let heading=null;
     if(typeof e.webkitCompassHeading==="number") heading=e.webkitCompassHeading;
     else if(e.alpha!==null) heading=360-e.alpha;
     if(heading===null) return;
-    compassHeading=heading;
-    update();
+    compassHeading=heading; update();
   }
 
-  // Rocks
-  const rockImages=['#ffcc00','#cccccc','#44ccff','#ff44ff'];
-  const rocks=[];
-  function spawnRocks(n=8){
-    rocks.forEach(r=>r.remove());
-    rocks.length=0;
-    for(let i=0;i<n;i++){
-      const rock = document.createElement('div');
-      rock.className='rock';
-      rock.style.background=rockImages[Math.floor(Math.random()*rockImages.length)];
-      rock.style.left=(Math.random()*260+20)+'px';
-      rock.style.top=(Math.random()*260+20)+'px';
+  function spawnRocks(){
+    rocks.forEach(r=>r.remove()); rocks.length=0;
+    for(let i=0;i<8;i++){
+      const rock=document.createElement('div'); rock.className='rock';
       rock.dataset.rockId=['G','S','C','M'][Math.floor(Math.random()*4)]+Math.floor(Math.random()*1000);
-      rock.addEventListener('click', ()=>{
-        const qr=rock.dataset.rockId;
-        window.location.href=`https://www.challengeaccepted.quest/prospect-scan?rock=${qr}`;
-      });
-      scannerDiv.appendChild(rock);
-      rocks.push(rock);
+      rock.style.background=['#ffcc00','#cccccc','#44ccff','#ff44ff'][Math.floor(Math.random()*4)];
+      scannerDiv.appendChild(rock); rocks.push(rock);
     }
+  }
+
+  function updateRocks(){
+    if(currentLat===null||currentLon===null) return;
+    rocks.forEach(rock=>{
+      const angle=Math.random()*360;
+      const radius=Math.random()*40+5; // move rocks slightly
+      rock.style.left=150+Math.cos(angle)*radius-10+'px';
+      rock.style.top=150+Math.sin(angle)*radius-10+'px';
+    });
   }
 
   function update(){
     if(currentLat===null||currentLon===null||compassHeading===null) return;
-    if(TARGET.id==='test_zone'&&(TARGET_LAT===null||TARGET_LON===null)){
-      TARGET_LAT=currentLat; TARGET_LON=currentLon;
-      TARGET_NAME='Test Zone (Your Home)';
-    }
     const dist=haversine(currentLat,currentLon,TARGET_LAT,TARGET_LON);
     const bear=bearing(currentLat,currentLon,TARGET_LAT,TARGET_LON);
     const relative=(bear-compassHeading+360)%360;
@@ -173,26 +185,22 @@ function initScanner() {
     document.getElementById("compass").textContent=`Compass: ${compassHeading.toFixed(1)}°`;
 
     let hotcold='';
-    if(dist<=20) hotcold='🔥 Very Hot';
-    else if(dist<=50) hotcold='🌡️ Hot';
-    else if(dist<=100) hotcold='🌡️ Warm';
-    else if(dist<=200) hotcold='❄️ Cold';
-    else hotcold='🥶 Very Cold';
+    if(dist<=5){ hotcold='🔥 Very Hot'; triggerVibration(); rocks.forEach(r=>r.style.display='block'); updateRocks();}
+    else if(dist<=20) hotcold='🌡️ Hot'; else if(dist<=50) hotcold='🌡️ Warm'; else if(dist<=100) hotcold='❄️ Cold'; else hotcold='🥶 Very Cold';
     document.getElementById("hotcold").textContent=`Proximity: ${hotcold}`;
 
     const pct=Math.min(1,200/dist);
     proximityFill.style.width=`${(pct*100).toFixed(1)}%`;
+
+    if(dist>5) rocks.forEach(r=>r.style.display='none');
   }
 
-  function animateSweep(){
-    sweepAngle=(sweepAngle+2)%360;
-    radarSweep.style.transform=`rotate(${sweepAngle}deg)`;
-    requestAnimationFrame(animateSweep);
-  }
+  function animateSweep(){ sweepAngle=(sweepAngle+2)%360; radarSweep.style.transform=`rotate(${sweepAngle}deg)`; requestAnimationFrame(animateSweep); }
+
+  function triggerVibration(){ if(navigator.vibrate && Math.random()<0.3) navigator.vibrate(150); }
 
   async function start(){
-    spawnRocks();
-    animateSweep();
+    spawnRocks(); animateSweep();
     if(typeof DeviceOrientationEvent!=="undefined" && typeof DeviceOrientationEvent.requestPermission==="function"){
       const res=await DeviceOrientationEvent.requestPermission();
       if(res!=="granted"){ alert("Compass permission denied"); return; }
@@ -202,14 +210,42 @@ function initScanner() {
     startGPS();
   }
 
-  document.getElementById("start").addEventListener("click",start);
+  // === QR Scanner ===
+  let qrActive=false;
+  async function startQRScanner(){
+    if(qrActive) return;
+    qrActive=true;
+    qrVideo.style.display='block';
+    try{
+      const stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:"environment"}});
+      qrVideo.srcObject=stream;
+      qrVideo.setAttribute("playsinline",true);
+      qrVideo.play();
 
-  scanRockBtn.addEventListener('click', ()=>{
-    if(rocks.length>0){
-      const qr = rocks[Math.floor(Math.random()*rocks.length)].dataset.rockId;
-      window.location.href=`https://www.challengeaccepted.quest/prospect-scan?rock=${qr}`;
-    } else alert("No rocks found!");
-  });
+      const canvas=document.createElement('canvas');
+      const ctx=canvas.getContext('2d');
+
+      function scanFrame(){
+        if(qrVideo.readyState===qrVideo.HAVE_ENOUGH_DATA){
+          canvas.width=qrVideo.videoWidth;
+          canvas.height=qrVideo.videoHeight;
+          ctx.drawImage(qrVideo,0,0,canvas.width,canvas.height);
+          const imageData=ctx.getImageData(0,0,canvas.width,canvas.height);
+          const code=jsQR(imageData.data,imageData.width,imageData.height);
+          if(code && code.data){
+            qrVideo.srcObject.getTracks().forEach(t=>t.stop());
+            window.location.href=`https://www.challengeaccepted.quest/prospect-scan?rock=${code.data}`;
+            return;
+          }
+        }
+        requestAnimationFrame(scanFrame);
+      }
+      requestAnimationFrame(scanFrame);
+    }catch(e){ alert("Camera QR scanning failed: "+e.message); qrActive=false;}
+  }
+
+  document.getElementById("start").addEventListener("click",start);
+  scanRockBtn.addEventListener("click",startQRScanner);
 }
 
 setTimeout(initScanner,50);
