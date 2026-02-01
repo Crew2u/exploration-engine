@@ -16,7 +16,6 @@ body {
   align-items:center;
   padding:10px;
 }
-
 h1 {
   margin:10px 0;
   text-align:center;
@@ -42,44 +41,42 @@ h1 {
   border-radius:50%;
   position:relative;
   overflow:hidden;
-  background:radial-gradient(circle at center, #001100 0%, #002200 80%);
-  box-shadow: inset 0 0 30px #00ff0044, 0 0 40px #00ff0088;
+  background:radial-gradient(circle,#001100 0%,#002200 80%);
+  box-shadow: inset 0 0 30px #00ff0044,0 0 40px #00ff0088;
   border:3px solid #00ff00;
-}
-
-/* Radar */
-#radarSweep {
-  position:absolute;
-  inset:0;
-  border-radius:50%;
-  background:conic-gradient(rgba(0,255,0,0.25) 0deg, rgba(0,255,0,0) 30deg);
-  z-index:2;
-  filter:blur(1px);
-}
-
-#radarArc {
-  position:absolute;
-  inset:0;
-  border-radius:50%;
-  box-shadow:0 0 20px #00ff44 inset, 0 0 30px #00ff4488 inset;
-  z-index:3;
 }
 
 #overlayPulse {
   position:absolute;
   inset:0;
   border-radius:50%;
-  box-shadow:0 0 40px #00ff44 inset, 0 0 60px #00ff4488 inset;
+  box-shadow:0 0 40px #00ff44 inset,0 0 60px #00ff4488 inset;
   animation:pulse 2s infinite alternate;
   z-index:1;
 }
 
 @keyframes pulse {
   from { transform:scale(0.97); opacity:0.7; }
-  to   { transform:scale(1); opacity:1; }
+  to { transform:scale(1); opacity:1; }
 }
 
-/* Compass arrow */
+#radarSweep {
+  position:absolute;
+  inset:0;
+  border-radius:50%;
+  background:conic-gradient(rgba(0,255,0,0.25),rgba(0,255,0,0) 30deg);
+  filter:blur(1px);
+  z-index:2;
+}
+
+#radarArc {
+  position:absolute;
+  inset:0;
+  border-radius:50%;
+  box-shadow:0 0 20px #00ff44 inset,0 0 30px #00ff4488 inset;
+  z-index:3;
+}
+
 #arrow {
   position:absolute;
   bottom:50%;
@@ -88,12 +85,12 @@ h1 {
   height:120px;
   background:#ff4444;
   transform-origin:bottom center;
+  transform:translateX(-50%);
   border-radius:4px;
-  z-index:5;
   box-shadow:0 0 8px #ff4444,0 0 20px #ff4444aa;
+  z-index:5;
 }
 
-/* Rocks */
 .rock {
   position:absolute;
   width:4px;
@@ -102,51 +99,10 @@ h1 {
   background:#ffcc00;
   box-shadow:0 0 6px #ffcc00,0 0 12px #ffcc0055;
   opacity:0;
-  transition:
-    transform 0.15s linear,
-    opacity 0.4s ease,
-    width 0.3s ease,
-    height 0.3s ease;
+  transition:transform 0.15s linear,opacity 0.4s ease,width 0.3s ease,height 0.3s ease;
   z-index:7;
 }
 
-/* QR Scanner overlay */
-#qrOverlay {
-  position:absolute;
-  inset:0;
-  display:none;
-  background:rgba(0,0,0,0.75);
-  z-index:20;
-}
-
-#qrOverlay video {
-  width:100%;
-  height:100%;
-  object-fit:cover;
-}
-
-#qrReticle {
-  position:absolute;
-  top:50%;
-  left:50%;
-  width:200px;
-  height:200px;
-  transform:translate(-50%,-50%);
-  border:2px solid #00ff44;
-  box-shadow:0 0 20px #00ff44;
-}
-
-#qrText {
-  position:absolute;
-  bottom:20px;
-  width:100%;
-  text-align:center;
-  color:#00ff44;
-  font-weight:bold;
-  text-shadow:0 0 10px #00ff44;
-}
-
-/* Info */
 #info {
   width:90%;
   max-width:360px;
@@ -162,9 +118,9 @@ h1 {
   text-align:center;
 }
 
-button, select {
-  margin:10px 0;
-  padding:12px 22px;
+select,button {
+  margin:8px 0;
+  padding:10px;
   border-radius:8px;
   border:none;
   background:#00ff00;
@@ -176,9 +132,6 @@ button, select {
   background:#ff4444;
   color:#fff;
   font-weight:bold;
-  width:90%;
-  max-width:360px;
-  box-shadow:0 0 8px #ff4444;
 }
 
 #proximityMeter {
@@ -190,7 +143,6 @@ button, select {
   border:1px solid #00ff44;
   background:#003322;
 }
-
 #proximityFill {
   height:100%;
   width:0%;
@@ -201,7 +153,6 @@ button, select {
 </head>
 
 <body>
-
 <h1>Futuristic Prospecting Scanner</h1>
 
 <select id="locationSelect">
@@ -214,13 +165,6 @@ button, select {
     <div id="radarSweep"></div>
     <div id="radarArc"></div>
     <div id="arrow"></div>
-
-    <!-- QR Scanner -->
-    <div id="qrOverlay">
-      <video id="qrVideo" playsinline></video>
-      <div id="qrReticle"></div>
-      <div id="qrText">PLACE ROCK CODE HERE</div>
-    </div>
   </div>
 </div>
 
@@ -232,73 +176,83 @@ button, select {
   <div class="box" id="accuracy">Accuracy: —</div>
 </div>
 
-<div id="proximityMeter">
-  <div id="proximityFill"></div>
-</div>
+<div id="proximityMeter"><div id="proximityFill"></div></div>
 
 <button id="scanRock">SCAN ROCK</button>
-<button id="toggleCam">TURN CAMERA OFF</button>
 
+<!-- External locations (optional, safe) -->
 <script src="locations.js"></script>
 
 <script>
-/* ===================== STATE ===================== */
-let currentLat=null, currentLon=null, heading=0;
-let rocks=[];
-let targetIndex=0;
-let scanning=false;
-let videoStream=null;
+/* ========= SAFE LOCATION LOADER ========= */
 
-const MAX_VIS=20;
-const RADAR_R=160;
+const FALLBACK_LOCATIONS = [
+  { name:"Test Zone Alpha", lat:-26.6415, lng:152.9112 },
+  { name:"Test Zone Bravo", lat:-26.6422, lng:152.9120 }
+];
 
-/* ===================== DOM ===================== */
-const scanner=document.getElementById("scanner-container");
-const sweep=document.getElementById("radarSweep");
-const arrow=document.getElementById("arrow");
-const select=document.getElementById("locationSelect");
-const fill=document.getElementById("proximityFill");
-
-const qrOverlay=document.getElementById("qrOverlay");
-const qrVideo=document.getElementById("qrVideo");
-
-/* ===================== LOCATIONS LOADER (FIXED) ===================== */
-function waitForLocations(){
-  if(!window.PROSPECTING_LOCATIONS || !Array.isArray(PROSPECTING_LOCATIONS)){
-    return setTimeout(waitForLocations,50);
+function getLocations() {
+  if (Array.isArray(window.PROSPECTING_LOCATIONS) && window.PROSPECTING_LOCATIONS.length) {
+    return window.PROSPECTING_LOCATIONS;
   }
-  initLocations();
+  console.warn("Using fallback locations");
+  return FALLBACK_LOCATIONS;
 }
 
-function initLocations(){
-  select.innerHTML="";
-  PROSPECTING_LOCATIONS.forEach((l,i)=>{
-    const o=document.createElement("option");
-    o.value=i;
-    o.textContent=l.name;
+/* ========= CORE SYSTEM ========= */
+
+let LOCATIONS;
+let targetIndex = 0;
+let currentLat = null;
+let currentLon = null;
+let heading = 0;
+let rocks = [];
+
+const MAX_VIS = 25;
+const RADAR_R = 160;
+
+const scanner = document.getElementById("scanner-container");
+const arrow = document.getElementById("arrow");
+const sweep = document.getElementById("radarSweep");
+const select = document.getElementById("locationSelect");
+const fill = document.getElementById("proximityFill");
+
+function init() {
+  LOCATIONS = getLocations();
+  select.innerHTML = "";
+
+  LOCATIONS.forEach((l,i)=>{
+    const o = document.createElement("option");
+    o.value = i;
+    o.textContent = l.name;
     select.appendChild(o);
   });
-  select.onchange=()=>{
-    targetIndex=parseInt(select.value);
+
+  select.onchange = () => {
+    targetIndex = +select.value;
     spawnRocks();
   };
+
   spawnRocks();
+  startGPS();
+  animate();
 }
 
-/* ===================== ROCKS ===================== */
-function spawnRocks(){
+function spawnRocks() {
   rocks.forEach(r=>r.el.remove());
-  rocks=[];
-  const t=PROSPECTING_LOCATIONS[targetIndex];
+  rocks = [];
+
+  const t = LOCATIONS[targetIndex];
 
   for(let i=0;i<6;i++){
-    const el=document.createElement("div");
+    const el = document.createElement("div");
     el.className="rock";
     scanner.appendChild(el);
+
     rocks.push({
       el,
-      lat:t.lat+(Math.random()-0.5)*0.00003,
-      lng:t.lng+(Math.random()-0.5)*0.00003
+      lat: t.lat + (Math.random()-0.5)*0.00004,
+      lng: t.lng + (Math.random()-0.5)*0.00004
     });
   }
 }
@@ -307,102 +261,66 @@ function hav(a,b,c,d){
   const R=6371000;
   const dLat=(c-a)*Math.PI/180;
   const dLon=(d-b)*Math.PI/180;
-  const x=Math.sin(dLat/2)**2+
+  const x=Math.sin(dLat/2)**2 +
     Math.cos(a*Math.PI/180)*Math.cos(c*Math.PI/180)*Math.sin(dLon/2)**2;
   return R*2*Math.atan2(Math.sqrt(x),Math.sqrt(1-x));
 }
 
 function updateRocks(){
   if(currentLat===null) return;
+
   rocks.forEach(r=>{
-    const d=hav(currentLat,currentLon,r.lat,r.lng);
-    if(d>MAX_VIS){
-      r.el.style.opacity=0;
-      return;
-    }
-    const scale=(MAX_VIS-d)/MAX_VIS;
-    const dx=(r.lng-currentLon)*90000;
-    const dy=(r.lat-currentLat)*111000;
-    const x=180+dx/MAX_VIS*RADAR_R;
-    const y=180-dy/MAX_VIS*RADAR_R;
+    const d = hav(currentLat,currentLon,r.lat,r.lng);
+    if(d>MAX_VIS){ r.el.style.opacity=0; return; }
+
+    const scale = (MAX_VIS-d)/MAX_VIS;
+    const dx = (r.lng-currentLon)*90000;
+    const dy = (r.lat-currentLat)*111000;
+
+    const x = 180 + dx/MAX_VIS*RADAR_R;
+    const y = 180 - dy/MAX_VIS*RADAR_R;
+
     r.el.style.transform=`translate(${x}px,${y}px)`;
-    r.el.style.width=r.el.style.height=(4+scale*8)+"px";
-    r.el.style.opacity=scale;
+    r.el.style.width = r.el.style.height = (4+scale*10)+"px";
+    r.el.style.opacity = scale;
   });
 }
 
-/* ===================== GPS ===================== */
-navigator.geolocation.watchPosition(p=>{
-  currentLat=p.coords.latitude;
-  currentLon=p.coords.longitude;
-  document.getElementById("gps").textContent=`You: ${currentLat.toFixed(6)}, ${currentLon.toFixed(6)}`;
-  document.getElementById("accuracy").textContent=`Accuracy ±${p.coords.accuracy.toFixed(1)}m`;
-
-  const t=PROSPECTING_LOCATIONS[targetIndex];
-  const d=hav(currentLat,currentLon,t.lat,t.lng);
-  document.getElementById("target").textContent=`Target: ${t.name}`;
-  document.getElementById("distance").textContent=`Distance: ${d.toFixed(1)}m`;
-  fill.style.width=Math.min(100,(1-d/50)*100)+"%";
-
-  if(d<5 && navigator.vibrate && Math.random()<0.3) navigator.vibrate(100);
-},{enableHighAccuracy:true});
-
-/* ===================== COMPASS ===================== */
-window.addEventListener("deviceorientation",e=>{
-  if(e.alpha!=null){
-    heading=360-e.alpha;
-    arrow.style.transform=`translateX(-50%) rotate(${heading}deg)`;
-    document.getElementById("compass").textContent=`Compass: ${heading.toFixed(0)}°`;
-  }
-});
-
-/* ===================== QR SCANNER ===================== */
-const detector = ("BarcodeDetector" in window)
-  ? new BarcodeDetector({formats:["qr_code"]})
-  : null;
-
-async function startScan(){
-  if(!detector) return alert("QR not supported on this device");
-  videoStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:"environment"}});
-  qrVideo.srcObject=videoStream;
-  await qrVideo.play();
-  qrOverlay.style.display="block";
-  scanning=true;
-  scanLoop();
-}
-
-function stopScan(){
-  scanning=false;
-  qrOverlay.style.display="none";
-  if(videoStream){
-    videoStream.getTracks().forEach(t=>t.stop());
-    videoStream=null;
-  }
-}
-
-async function scanLoop(){
-  if(!scanning) return;
-  const codes=await detector.detect(qrVideo);
-  if(codes.length){
-    alert("ROCK FOUND:\n"+codes[0].rawValue);
-    stopScan();
-  }
-  requestAnimationFrame(scanLoop);
-}
-
-document.getElementById("scanRock").onclick=startScan;
-document.getElementById("toggleCam").onclick=stopScan;
-
-/* ===================== LOOP ===================== */
 function animate(){
-  sweep.style.transform=`rotate(${Date.now()/20%360}deg)`;
+  sweep.style.transform=`rotate(${Date.now()/25%360}deg)`;
   updateRocks();
   requestAnimationFrame(animate);
 }
 
-waitForLocations();
-animate();
-</script>
+function startGPS(){
+  navigator.geolocation.watchPosition(p=>{
+    currentLat=p.coords.latitude;
+    currentLon=p.coords.longitude;
 
+    document.getElementById("gps").textContent =
+      `${currentLat.toFixed(6)}, ${currentLon.toFixed(6)}`;
+    document.getElementById("accuracy").textContent =
+      `Accuracy ±${p.coords.accuracy.toFixed(1)}m`;
+
+    const t = LOCATIONS[targetIndex];
+    const d = hav(currentLat,currentLon,t.lat,t.lng);
+    document.getElementById("distance").textContent = `Distance: ${d.toFixed(1)}m`;
+    document.getElementById("target").textContent = `Target: ${t.name}`;
+
+    fill.style.width = Math.max(0,Math.min(100,(1-d/40)*100))+"%";
+    if(d<6 && navigator.vibrate) navigator.vibrate([80,40,80]);
+  },console.error,{enableHighAccuracy:true});
+}
+
+window.addEventListener("deviceorientation",e=>{
+  if(e.alpha!=null){
+    heading = 360-e.alpha;
+    arrow.style.transform = `translateX(-50%) rotate(${heading}deg)`;
+    document.getElementById("compass").textContent = `Compass: ${heading.toFixed(0)}°`;
+  }
+});
+
+init();
+</script>
 </body>
 </html>
