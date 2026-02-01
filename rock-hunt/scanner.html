@@ -18,11 +18,16 @@ h1 {
   box-shadow: inset 0 0 30px #00ff0044, 0 0 40px #00ff0088;
   overflow:hidden; border:3px solid #00ff00;
 }
-/* Radar sweep */
+/* Radar sweep and arcs */
 #radarSweep {
   position:absolute; width:100%; height:100%; border-radius:50%;
   background:conic-gradient(rgba(0,255,0,0.2) 0deg, rgba(0,255,0,0) 25deg, rgba(0,255,0,0) 360deg);
   pointer-events:none; transform:rotate(0deg); z-index:2;
+}
+#radarArc {
+  position:absolute; width:100%; height:100%; border-radius:50%;
+  box-shadow:0 0 20px #00ff44 inset, 0 0 30px #00ff4488 inset;
+  z-index:3; pointer-events:none;
 }
 #arrow {
   position:absolute; bottom:50%; left:50%; width:6px; height:120px;
@@ -30,8 +35,8 @@ h1 {
   transition:transform 0.1s linear; z-index:5;
 }
 .rock {
-  position:absolute; width:20px; height:20px; border-radius:50%;
-  box-shadow:0 0 8px #ffff00,0 0 16px #ffff0055; cursor:pointer; z-index:6;
+  position:absolute; border-radius:50%; box-shadow:0 0 8px #ffff00,0 0 16px #ffff0055;
+  cursor:pointer; z-index:7;
 }
 /* Info panels */
 #info { width:90%; max-width:360px; font-size:0.9em; line-height:1.4; text-align:center; margin-top:10px; }
@@ -55,7 +60,7 @@ button, select { margin:10px 0; padding:12px 22px; font-size:1em; border-radius:
 }
 /* QR HUD overlay */
 #qrOverlay {
-  position:absolute; width:360px; height:360px; top:0; left:0; border-radius:50%; pointer-events:none; z-index:4;
+  position:absolute; width:360px; height:360px; top:0; left:0; border-radius:50%; pointer-events:none; z-index:6;
   box-shadow:0 0 30px #0f0 inset;
 }
 #qrOverlay:before {
@@ -74,6 +79,7 @@ button, select { margin:10px 0; padding:12px 22px; font-size:1em; border-radius:
   <video id="qrVideo" autoplay playsinline></video>
   <div id="overlayPulse"></div>
   <div id="radarSweep"></div>
+  <div id="radarArc"></div>
   <div id="arrow"></div>
   <div id="qrOverlay"></div>
 </div>
@@ -91,9 +97,10 @@ button, select { margin:10px 0; padding:12px 22px; font-size:1em; border-radius:
 <div id="proximityMeter"><div id="proximityFill"></div></div>
 
 <button id="start">Activate Scanner</button>
-<button id="scanRock">Scan QR Rock</button>
+<button id="scanRock">Start QR Scanner</button>
+<button id="toggleCamera">Toggle Camera</button>
 
-<script src="locations.js?v=6"></script>
+<script src="locations.js?v=8"></script>
 <script src="https://unpkg.com/jsqr/dist/jsQR.js"></script>
 
 <script>
@@ -112,12 +119,16 @@ function initScanner(){
   const select=document.getElementById("locationSelect");
   const proximityFill=document.getElementById("proximityFill");
   const scanRockBtn=document.getElementById("scanRock");
+  const toggleCamBtn=document.getElementById("toggleCamera");
   const scannerDiv=document.getElementById("scanner-container");
   const radarSweep=document.getElementById("radarSweep");
+  const radarArc=document.getElementById("radarArc");
   const qrVideo=document.getElementById("qrVideo");
 
   let sweepAngle=0;
   let rocks=[];
+  let cameraStream=null;
+  let qrActive=false;
 
   select.innerHTML="";
   PROSPECTING_LOCATIONS.forEach((loc,i)=>{
@@ -160,17 +171,20 @@ function initScanner(){
       const rock=document.createElement('div'); rock.className='rock';
       rock.dataset.rockId=['G','S','C','M'][Math.floor(Math.random()*4)]+Math.floor(Math.random()*1000);
       rock.style.background=['#ffcc00','#cccccc','#44ccff','#ff44ff'][Math.floor(Math.random()*4)];
+      rock.style.width='20px'; rock.style.height='20px';
       scannerDiv.appendChild(rock); rocks.push(rock);
     }
   }
 
-  function updateRocks(){
-    if(currentLat===null||currentLon===null) return;
+  function updateRocks(distToTarget){
     rocks.forEach(rock=>{
-      const angle=Math.random()*360;
-      const radius=Math.random()*40+5;
-      rock.style.left=150+Math.cos(angle)*radius-10+'px';
-      rock.style.top=150+Math.sin(angle)*radius-10+'px';
+      const angle=Math.random()*2*Math.PI;
+      let radius=0;
+      if(distToTarget<=5) radius=Math.random()*40+5;
+      else radius=0;
+      rock.style.width=rock.style.height=(10 + (5/distToTarget*50))+'px';
+      rock.style.left=150+Math.cos(angle)*radius-parseFloat(rock.style.width)/2+'px';
+      rock.style.top=150+Math.sin(angle)*radius-parseFloat(rock.style.height)/2+'px';
     });
   }
 
@@ -188,7 +202,7 @@ function initScanner(){
     document.getElementById("compass").textContent=`Compass: ${compassHeading.toFixed(1)}°`;
 
     let hotcold='';
-    if(dist<=5){ hotcold='🔥 Very Hot'; triggerVibration(); rocks.forEach(r=>r.style.display='block'); updateRocks();}
+    if(dist<=5){ hotcold='🔥 Very Hot'; triggerVibration(); rocks.forEach(r=>r.style.display='block'); updateRocks(dist);}
     else if(dist<=20) hotcold='🌡️ Hot'; else if(dist<=50) hotcold='🌡️ Warm'; else if(dist<=100) hotcold='❄️ Cold'; else hotcold='🥶 Very Cold';
     document.getElementById("hotcold").textContent=`Proximity: ${hotcold}`;
 
@@ -196,6 +210,9 @@ function initScanner(){
     proximityFill.style.width=`${(pct*100).toFixed(1)}%`;
 
     if(dist>5) rocks.forEach(r=>r.style.display='none');
+
+    // Radar arcs pulse intensity
+    radarArc.style.boxShadow=`0 0 ${10+(50/dist)}px #00ff44 inset, 0 0 ${20+(100/dist)}px #00ff4488 inset`;
   }
 
   function animateSweep(){ sweepAngle=(sweepAngle+2)%360; radarSweep.style.transform=`rotate(${sweepAngle}deg)`; requestAnimationFrame(animateSweep); }
@@ -213,20 +230,18 @@ function initScanner(){
     startGPS();
   }
 
-  // === QR Scanner with HUD overlay ===
-  let qrActive=false;
   async function startQRScanner(){
     if(qrActive) return;
-    qrActive=true;
-    qrVideo.style.display='block';
+    qrActive=true; qrVideo.style.display='block';
     try{
-      const stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:"environment"}});
-      qrVideo.srcObject=stream;
+      cameraStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:"environment"}});
+      qrVideo.srcObject=cameraStream;
 
       const canvas=document.createElement('canvas');
       const ctx=canvas.getContext('2d');
 
       function scanFrame(){
+        if(!qrActive) return;
         if(qrVideo.readyState===qrVideo.HAVE_ENOUGH_DATA){
           canvas.width=qrVideo.videoWidth;
           canvas.height=qrVideo.videoHeight;
@@ -245,8 +260,16 @@ function initScanner(){
     }catch(e){ alert("Camera QR scanning failed: "+e.message); qrActive=false;}
   }
 
+  function toggleCamera(){
+    if(cameraStream){
+      cameraStream.getTracks().forEach(t=>t.stop());
+      qrVideo.style.display='none'; cameraStream=null; qrActive=false;
+    } else startQRScanner();
+  }
+
   document.getElementById("start").addEventListener("click",start);
   scanRockBtn.addEventListener("click",startQRScanner);
+  toggleCamBtn.addEventListener("click",toggleCamera);
 }
 
 setTimeout(initScanner,50);
