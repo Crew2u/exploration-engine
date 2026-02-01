@@ -5,81 +5,55 @@
 <title>Futuristic Prospecting Scanner</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <style>
-body {
-  margin:0; font-family:system-ui,sans-serif; background:#000; color:#0f0;
-  display:flex; flex-direction:column; align-items:center; justify-content:flex-start; padding:10px;
-}
+body { margin:0; font-family:system-ui,sans-serif; background:#000; color:#0f0;
+display:flex; flex-direction:column; align-items:center; justify-content:flex-start; padding:10px;}
 h1 { margin:10px 0; text-align:center; text-shadow:0 0 10px #0f0,0 0 20px #0f0555; }
 
-#deviceFrame {
-  width:400px; height:400px; border:10px solid #00ff44; border-radius:30px;
-  box-shadow:0 0 50px #00ff44 inset; display:flex; align-items:center; justify-content:center; position:relative;
-  background:#001100;
-}
+#deviceFrame { width:400px; height:400px; border:10px solid #00ff44; border-radius:30px;
+box-shadow:0 0 50px #00ff44 inset; display:flex; align-items:center; justify-content:center; position:relative;
+background:#001100;}
 
-#scanner-container {
-  width:360px; height:360px; border-radius:50%; position:relative; overflow:hidden;
-  background:radial-gradient(circle at center, #001100 0%, #002200 80%);
-  box-shadow: inset 0 0 30px #00ff0044, 0 0 40px #00ff0088; border:3px solid #00ff00;
-}
+#scanner-container { width:360px; height:360px; border-radius:50%; position:relative; overflow:hidden;
+background:radial-gradient(circle at center, #001100 0%, #002200 80%);
+box-shadow: inset 0 0 30px #00ff0044, 0 0 40px #00ff0088; border:3px solid #00ff00;}
 
-#radarSweep {
-  position:absolute; width:100%; height:100%; border-radius:50%;
-  background:conic-gradient(rgba(0,255,0,0.2) 0deg, rgba(0,255,0,0) 25deg, rgba(0,255,0,0) 360deg);
-  pointer-events:none; transform:rotate(0deg); z-index:2;
-  filter:blur(1px);
-}
+#radarSweep { position:absolute; width:100%; height:100%; border-radius:50%;
+background:conic-gradient(rgba(0,255,0,0.2) 0deg, rgba(0,255,0,0) 25deg, rgba(0,255,0,0) 360deg);
+pointer-events:none; transform:rotate(0deg); z-index:2; filter:blur(1px); }
 
-#radarArc {
-  position:absolute; width:100%; height:100%; border-radius:50%;
-  box-shadow:0 0 20px #00ff44 inset, 0 0 30px #00ff4488 inset; z-index:3; pointer-events:none;
-}
+#radarArc { position:absolute; width:100%; height:100%; border-radius:50%;
+box-shadow:0 0 20px #00ff44 inset, 0 0 30px #00ff4488 inset; z-index:3; pointer-events:none; }
 
-#radarRings {
-  position:absolute; width:100%; height:100%; border-radius:50%; z-index:1; pointer-events:none;
-}
+#radarRings { position:absolute; width:100%; height:100%; border-radius:50%; z-index:1; pointer-events:none; }
 
-.ring {
-  position:absolute; border:1px solid #00ff22; border-radius:50%;
-  top:50%; left:50%; transform:translate(-50%,-50%) scale(0); opacity:0.2;
-  animation:ringPulse 4s infinite;
-}
+.ring { position:absolute; border:1px solid #00ff22; border-radius:50%;
+top:50%; left:50%; transform:translate(-50%,-50%) scale(0); opacity:0.2;
+animation:ringPulse 4s infinite; }
 
 @keyframes ringPulse {
-  0% { transform:translate(-50%,-50%) scale(0); opacity:0.1; }
-  50% { transform:translate(-50%,-50%) scale(1); opacity:0.3; }
-  100% { transform:translate(-50%,-50%) scale(0); opacity:0.1; }
+0% { transform:translate(-50%,-50%) scale(0); opacity:0.1; }
+50% { transform:translate(-50%,-50%) scale(1); opacity:0.3; }
+100% { transform:translate(-50%,-50%) scale(0); opacity:0.1; }
 }
 
 #arrow { position:absolute; bottom:50%; left:50%; width:6px; height:120px; background:#ff4444;
-  transform-origin:bottom center; border-radius:4px; transition:transform 0.1s linear; z-index:5;
-  box-shadow:0 0 8px #ff4444,0 0 20px #ff4444AA;
-}
+transform-origin:bottom center; border-radius:4px; transition:transform 0.1s linear; z-index:5;
+box-shadow:0 0 8px #ff4444,0 0 20px #ff4444AA; }
 
-.rock {
-  position:absolute; border-radius:50%; box-shadow:0 0 8px #ffff00,0 0 16px #ffff0055;
-  cursor:pointer; z-index:7; animation:rockPulse 1s infinite alternate;
-}
+.rock { position:absolute; border-radius:50%; box-shadow:0 0 8px #ffff00,0 0 16px #ffff0055;
+cursor:pointer; z-index:7; animation:rockPulse 1s infinite alternate; }
 
-@keyframes rockPulse {
-  0% { transform:scale(1); }
-  100% { transform:scale(1.4); }
-}
+@keyframes rockPulse { 0% { transform:scale(1); } 100% { transform:scale(1.4); } }
 
 #qrVideo { display:none; position:absolute; width:360px; height:360px; top:0; left:0; border-radius:50%; object-fit:cover; z-index:0; }
 #qrOverlay { position:absolute; width:360px; height:360px; top:0; left:0; border-radius:50%; pointer-events:none; z-index:6; box-shadow:0 0 30px #0f0 inset; }
 #qrOverlay:before { content:"PLACE ROCK CODE HERE"; position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); color:#0f0; font-size:1.2em; text-shadow:0 0 8px #0f0,0 0 16px #0f0444; }
 
-#overlayPulse {
-  position:absolute; width:360px; height:360px; border-radius:50%; top:0; left:0;
-  box-shadow:0 0 40px #00ff44 inset, 0 0 60px #00ff4488 inset; pointer-events:none; z-index:1;
-  animation:scannerPulse 2s infinite alternate;
-}
+#overlayPulse { position:absolute; width:360px; height:360px; border-radius:50%; top:0; left:0;
+box-shadow:0 0 40px #00ff44 inset, 0 0 60px #00ff4488 inset; pointer-events:none; z-index:1;
+animation:scannerPulse 2s infinite alternate; }
 
-@keyframes scannerPulse {
-  0% { transform:scale(0.98); opacity:0.7; }
-  100% { transform:scale(1); opacity:1; }
-}
+@keyframes scannerPulse { 0% { transform:scale(0.98); opacity:0.7; } 100% { transform:scale(1); opacity:1; } }
 
 #info { width:90%; max-width:360px; font-size:0.9em; line-height:1.4; text-align:center; margin-top:10px; }
 .box { border:1px solid #00ff0044; padding:6px; margin:4px 0; border-radius:6px; background:#00110099; }
@@ -122,7 +96,7 @@ button, select { margin:10px 0; padding:12px 22px; font-size:1em; border-radius:
 <button id="scanRock">Start QR Scanner</button>
 <button id="toggleCamera">Toggle Camera</button>
 
-<script src="locations.js?v=11"></script>
+<script src="locations.js?v=12"></script>
 <script src="https://unpkg.com/jsqr/dist/jsQR.js"></script>
 <script>
 function initScanner(){
@@ -148,7 +122,6 @@ function initScanner(){
   function haversine(lat1,lon1,lat2,lon2){const R=6371000,dLat=toRad(lat2-lat1),dLon=toRad(lon2-lon1);const a=Math.sin(dLat/2)**2+Math.cos(toRad(lat1))*Math.cos(toRad(lat2))*Math.sin(dLon/2)**2; return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));}
   function bearing(lat1,lon1,lat2,lon2){const y=Math.sin(toRad(lon2-lon1))*Math.cos(toRad(lat2)), x=Math.cos(toRad(lat1))*Math.sin(toRad(lat2))-Math.sin(toRad(lat1))*Math.cos(toRad(lat2))*Math.cos(toRad(lon2-lon1)); return toDeg(Math.atan2(y,x));}
 
-  // Populate location select
   select.innerHTML=""; PROSPECTING_LOCATIONS.forEach((loc,i)=>{ const opt=document.createElement('option'); opt.value=i; opt.textContent=loc.name; select.appendChild(opt);});
   select.value=0;
 
@@ -165,6 +138,8 @@ function initScanner(){
       rock.dataset.rockId=['G','S','C','M'][Math.floor(Math.random()*4)]+Math.floor(Math.random()*1000);
       rock.style.background=['#ffcc00','#cccccc','#44ccff','#ff44ff'][Math.floor(Math.random()*4)];
       rock.style.width='20px'; rock.style.height='20px';
+      rock.dataset.angle=Math.random()*2*Math.PI;  // unique angle for motion
+      rock.dataset.radius=Math.random()*50+10;     // unique radius
       scannerDiv.appendChild(rock); rocks.push(rock);
     }
   }
@@ -173,13 +148,14 @@ function initScanner(){
     rocks.forEach(rock=>{
       if(distToTarget>5){ rock.style.display='none'; return;}
       rock.style.display='block';
-      const target=getTarget();
-      const angle=Math.random()*2*Math.PI;
-      let radius=Math.random()*40+5;
-      rock.style.width=rock.style.height=(10 + (5/distToTarget*50))+'px';
+      // move towards center as user approaches
+      const baseRadius=parseFloat(rock.dataset.radius);
+      const radius=Math.max(2, baseRadius*(distToTarget/5)); 
+      const angle=parseFloat(rock.dataset.angle);
       const x=180 + Math.cos(angle-(compassHeading||0)*Math.PI/180)*radius - parseFloat(rock.style.width)/2;
       const y=180 + Math.sin(angle-(compassHeading||0)*Math.PI/180)*radius - parseFloat(rock.style.height)/2;
       rock.style.left=x+'px'; rock.style.top=y+'px';
+      rock.style.width=rock.style.height=(10 + (5/distToTarget*50))+'px';
     });
   }
 
