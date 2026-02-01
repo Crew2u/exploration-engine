@@ -5,58 +5,62 @@
 <title>Futuristic Prospecting Scanner</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <style>
-/* ===== Body & HUD ===== */
 body {
-  margin:0; font-family:system-ui,sans-serif; background:#0b0b0b; color:#00ffcc;
+  margin:0; font-family:system-ui,sans-serif; background:#000; color:#0f0;
   display:flex; flex-direction:column; align-items:center; justify-content:flex-start; padding:10px;
 }
 h1 {
-  margin:10px 0; text-align:center; text-shadow:0 0 8px #00ffcc,0 0 16px #00ffcc55;
+  margin:10px 0; text-align:center; text-shadow:0 0 10px #0f0,0 0 20px #0f0555;
 }
 #scanner-container {
-  width:320px; height:320px; border-radius:50%; position:relative; margin:15px;
-  background:radial-gradient(circle at center, #001100 0%, #002200 70%);
-  box-shadow: inset 0 0 30px #00ffcc44, 0 0 40px #00ffcc88;
-  overflow:hidden;
-  border:3px solid #00ffcc;
+  width:360px; height:360px; border-radius:50%; position:relative; margin:15px;
+  background:radial-gradient(circle at center, #001100 0%, #002200 80%);
+  box-shadow: inset 0 0 30px #00ff0044, 0 0 40px #00ff0088;
+  overflow:hidden; border:3px solid #00ff00;
 }
-/* Radar Sweep */
+/* Radar sweep */
 #radarSweep {
   position:absolute; width:100%; height:100%; border-radius:50%;
-  background:conic-gradient(rgba(0,255,0,0.25) 0deg, rgba(0,255,0,0) 30deg, rgba(0,255,0,0) 360deg);
-  pointer-events:none;
-  transform:rotate(0deg);
-  z-index:2;
+  background:conic-gradient(rgba(0,255,0,0.2) 0deg, rgba(0,255,0,0) 25deg, rgba(0,255,0,0) 360deg);
+  pointer-events:none; transform:rotate(0deg); z-index:2;
 }
-/* Arrow pointing to target */
 #arrow {
   position:absolute; bottom:50%; left:50%; width:6px; height:120px;
   background:#ff4444; transform-origin:bottom center; border-radius:4px;
   transition:transform 0.1s linear; z-index:5;
 }
-/* Rocks blips */
 .rock {
   position:absolute; width:20px; height:20px; border-radius:50%;
   box-shadow:0 0 8px #ffff00,0 0 16px #ffff0055; cursor:pointer; z-index:6;
 }
-/* Info Panels */
+/* Info panels */
 #info { width:90%; max-width:360px; font-size:0.9em; line-height:1.4; text-align:center; margin-top:10px; }
-.box { border:1px solid #00ffcc44; padding:6px; margin:4px 0; border-radius:6px; background:#00110099; }
+.box { border:1px solid #00ff0044; padding:6px; margin:4px 0; border-radius:6px; background:#00110099; }
 /* Buttons */
-button, select { margin:10px 0; padding:12px 22px; font-size:1em; border-radius:8px; border:none; background:#00ffcc; color:#000; cursor:pointer; }
+button, select { margin:10px 0; padding:12px 22px; font-size:1em; border-radius:8px; border:none; background:#00ff00; color:#000; cursor:pointer; }
 #scanRock { background:#ff4444; color:#fff; font-weight:bold; width:90%; max-width:360px; box-shadow:0 0 8px #ff4444; }
 /* Proximity meter */
 #proximityMeter { width:90%; max-width:360px; height:20px; background:#004422; border:1px solid #00ff44; border-radius:10px; overflow:hidden; margin-top:6px; }
 #proximityFill { width:0%; height:100%; background:#ff4444; transition:width 0.2s ease; }
-/* Futuristic overlay pulses */
+/* Futuristic overlay */
 #overlayPulse {
-  position:absolute; width:320px; height:320px; border-radius:50%; top:0; left:0;
+  position:absolute; width:360px; height:360px; border-radius:50%; top:0; left:0;
   box-shadow:0 0 40px #00ff44 inset, 0 0 60px #00ff4488 inset;
   pointer-events:none; z-index:1;
 }
-/* Camera video for QR */
+/* Camera feed */
 #qrVideo {
-  display:none; width:100%; max-width:320px; border-radius:12px; margin-top:10px;
+  display:none; position:absolute; width:360px; height:360px; top:0; left:0; border-radius:50%;
+  object-fit:cover; z-index:0;
+}
+/* QR HUD overlay */
+#qrOverlay {
+  position:absolute; width:360px; height:360px; top:0; left:0; border-radius:50%; pointer-events:none; z-index:4;
+  box-shadow:0 0 30px #0f0 inset;
+}
+#qrOverlay:before {
+  content:"PLACE ROCK CODE HERE"; position:absolute; top:50%; left:50%;
+  transform:translate(-50%,-50%); color:#0f0; font-size:1.2em; text-shadow:0 0 8px #0f0,0 0 16px #0f0444;
 }
 </style>
 </head>
@@ -67,9 +71,11 @@ button, select { margin:10px 0; padding:12px 22px; font-size:1em; border-radius:
 <select id="locationSelect"><option>Loading locations...</option></select>
 
 <div id="scanner-container">
+  <video id="qrVideo" autoplay playsinline></video>
   <div id="overlayPulse"></div>
   <div id="radarSweep"></div>
   <div id="arrow"></div>
+  <div id="qrOverlay"></div>
 </div>
 
 <div id="info">
@@ -87,23 +93,21 @@ button, select { margin:10px 0; padding:12px 22px; font-size:1em; border-radius:
 <button id="start">Activate Scanner</button>
 <button id="scanRock">Scan QR Rock</button>
 
-<video id="qrVideo" autoplay></video>
-
-<script src="locations.js?v=5"></script>
+<script src="locations.js?v=6"></script>
 <script src="https://unpkg.com/jsqr/dist/jsQR.js"></script>
 
 <script>
-function initScanner() {
+function initScanner(){
   if(!Array.isArray(PROSPECTING_LOCATIONS)||PROSPECTING_LOCATIONS.length===0){
     alert("No PROSPECTING_LOCATIONS found!"); return;
   }
 
-  let TARGET = PROSPECTING_LOCATIONS[0];
-  let TARGET_LAT = TARGET.lat;
-  let TARGET_LON = TARGET.lng;
-  let TARGET_NAME = TARGET.name;
+  let TARGET=PROSPECTING_LOCATIONS[0];
+  let TARGET_LAT=TARGET.lat;
+  let TARGET_LON=TARGET.lng;
+  let TARGET_NAME=TARGET.name;
 
-  let currentLat=null, currentLon=null, compassHeading=null, smoothAngle=0;
+  let currentLat=null,currentLon=null,compassHeading=null,smoothAngle=0;
   const arrow=document.getElementById("arrow");
   const select=document.getElementById("locationSelect");
   const proximityFill=document.getElementById("proximityFill");
@@ -115,7 +119,6 @@ function initScanner() {
   let sweepAngle=0;
   let rocks=[];
 
-  // Dropdown
   select.innerHTML="";
   PROSPECTING_LOCATIONS.forEach((loc,i)=>{
     const opt=document.createElement('option'); opt.value=i; opt.textContent=loc.name;
@@ -165,7 +168,7 @@ function initScanner() {
     if(currentLat===null||currentLon===null) return;
     rocks.forEach(rock=>{
       const angle=Math.random()*360;
-      const radius=Math.random()*40+5; // move rocks slightly
+      const radius=Math.random()*40+5;
       rock.style.left=150+Math.cos(angle)*radius-10+'px';
       rock.style.top=150+Math.sin(angle)*radius-10+'px';
     });
@@ -210,7 +213,7 @@ function initScanner() {
     startGPS();
   }
 
-  // === QR Scanner ===
+  // === QR Scanner with HUD overlay ===
   let qrActive=false;
   async function startQRScanner(){
     if(qrActive) return;
@@ -219,8 +222,6 @@ function initScanner() {
     try{
       const stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:"environment"}});
       qrVideo.srcObject=stream;
-      qrVideo.setAttribute("playsinline",true);
-      qrVideo.play();
 
       const canvas=document.createElement('canvas');
       const ctx=canvas.getContext('2d');
