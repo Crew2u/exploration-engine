@@ -4,8 +4,8 @@
 window.PROSPECTING_LOCATIONS = [
   { 
     name: "Test Zone Alpha", 
-    lat: -26.6415, 
-    lng: 152.9112,
+    lat: -26.4098430, 
+    lng: 152.9263279,
     rarities: ["common","common","rare","common","epic","common"]
   },
   { 
