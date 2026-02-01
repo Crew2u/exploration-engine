@@ -5,71 +5,67 @@
 <title>Futuristic Prospecting Scanner</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <style>
+/* --- Body & Fonts --- */
 body { margin:0; background:#000; color:#0f0; font-family:monospace; display:flex; flex-direction:column; align-items:center; justify-content:flex-start; padding:10px;}
 h1 { margin:10px 0; text-align:center; text-shadow:0 0 10px #0f0,0 0 20px #0f0555; }
-
+/* --- Device Frame --- */
 #deviceFrame {
   width:400px; height:500px; border:10px solid #00ff44; border-radius:30px;
   box-shadow:0 0 50px #00ff44 inset, 0 0 30px #00ff22; display:flex; flex-direction:column; align-items:center; justify-content:flex-start;
   background:#001100; position:relative; padding:20px; overflow:hidden;
 }
-
+/* --- Scanner Container --- */
 #scanner-container {
   width:360px; height:360px; border-radius:50%; position:relative; overflow:hidden;
   background:radial-gradient(circle at center, #001100 0%, #002200 80%);
   box-shadow: inset 0 0 30px #00ff0044, 0 0 40px #00ff0088; border:3px solid #00ff00;
 }
-
+/* --- Radar Elements --- */
 #radarSweep {
   position:absolute; width:100%; height:100%; border-radius:50%;
   background:conic-gradient(rgba(0,255,0,0.3) 0deg, rgba(0,255,0,0) 60deg);
   transform:rotate(0deg); pointer-events:none;
 }
-
 #radarRings {
   position:absolute; width:100%; height:100%; border-radius:50%; pointer-events:none;
   box-shadow:0 0 0 1px #0f0 inset, 0 0 0 2px #0f0555 inset, 0 0 0 3px #0f0 inset;
 }
-
 #arrow {
   position:absolute; width:10px; height:40px; background:#0f0; top:50%; left:50%;
   transform-origin:50% 100%; transform:rotate(0deg) translate(-50%,-100%);
   border-radius:2px;
 }
-
 .rock {
-  position:absolute; width:6px; height:6px; background:gold; border-radius:50%;
+  position:absolute; width:6px; height:6px; border-radius:50%;
   opacity:0; transform:translate(0,0) scale(0); pointer-events:none;
   transition: transform 0.1s linear, opacity 0.3s linear;
 }
-
+/* --- QR Video & Overlay --- */
 #qrVideo { position:absolute; width:100%; height:100%; top:0; left:0; object-fit:cover; display:none; }
-
 #qrOverlay {
   position:absolute; width:100%; height:100%; top:0; left:0;
   display:flex; align-items:center; justify-content:center; color:#0f0;
   font-size:18px; text-align:center; text-shadow:0 0 10px #0f0,0 0 20px #0f0555;
   pointer-events:none;
 }
-
+/* --- Pulse/Heartbeat --- */
 #overlayPulse {
   position:absolute; width:100%; height:100%; border-radius:50%;
   background:radial-gradient(circle, rgba(0,255,0,0.2) 0%, transparent 70%);
   animation: pulse 1.5s infinite;
 }
-
 @keyframes pulse {
   0%{ transform:scale(0.8); opacity:0.4; }
   50%{ transform:scale(1); opacity:0.2; }
   100%{ transform:scale(0.8); opacity:0.4; }
 }
-
+/* --- Info Boxes --- */
 #info { margin-top:10px; width:400px; display:flex; flex-wrap:wrap; justify-content:space-between; }
 .box { width:48%; margin-bottom:5px; background:#002200; padding:5px; border-radius:5px; border:1px solid #0f0; text-align:center; font-size:14px; }
-
+/* --- Proximity Meter --- */
 #proximityMeter { width:360px; height:10px; border:1px solid #0f0; margin-top:10px; border-radius:5px; overflow:hidden; }
 #proximityFill { width:0%; height:100%; background:#0f0; transition:width 0.3s; }
-
+/* --- Buttons --- */
 button { margin:5px; padding:10px 15px; border:none; border-radius:5px; background:#0f0; color:#000; font-weight:bold; cursor:pointer; }
 button:disabled { opacity:0.5; cursor:default; }
 </style>
@@ -108,13 +104,12 @@ button:disabled { opacity:0.5; cursor:default; }
 
 <script src="locations.js?v=21"></script>
 <script src="https://unpkg.com/jsqr/dist/jsQR.js"></script>
-<script>
-let TARGET_INDEX = 0;
-let rocks = [];
-let watchId, compassHeading = 0;
-let qrActive = false;
-let cameraStream = null;
 
+<script>
+// --- Globals ---
+let TARGET_INDEX = 0, rocks = [], watchId, compassHeading = 0, qrActive = false, cameraStream = null;
+
+// --- DOM References ---
 const select = document.getElementById("locationSelect");
 const startBtn = document.getElementById("start");
 const scanBtn = document.getElementById("scanRock");
@@ -132,22 +127,21 @@ const arrow = document.getElementById("arrow");
 const qrVideo = document.getElementById("qrVideo");
 const qrOverlay = document.getElementById("qrOverlay");
 
-function init() {
-  if(typeof PROSPECTING_LOCATIONS==="undefined"){setTimeout(init,50);return;}
+// --- Initialization ---
+function initScanner() {
+  if(typeof PROSPECTING_LOCATIONS==="undefined"){setTimeout(initScanner,50);return;}
   if(PROSPECTING_LOCATIONS.length===0){alert("No locations defined!"); return;}
 
-  // populate dropdown
+  // Populate dropdown
   select.innerHTML="";
   PROSPECTING_LOCATIONS.forEach((loc,i)=>{
-    const opt = document.createElement('option');
-    opt.value = i;
-    opt.textContent = loc.name;
+    const opt = document.createElement('option'); opt.value=i; opt.textContent=loc.name;
     select.appendChild(opt);
   });
   select.value = TARGET_INDEX;
 
   select.addEventListener('change',()=>{
-    TARGET_INDEX=parseInt(select.value);
+    TARGET_INDEX = parseInt(select.value);
     spawnRocks();
     updateDisplay();
   });
@@ -157,54 +151,50 @@ function init() {
   animateRadar();
 }
 
+// --- Rocks ---
 function spawnRocks() {
-  rocks = [];
+  rocks=[];
   const target = PROSPECTING_LOCATIONS[TARGET_INDEX];
+  const container = document.getElementById("scanner-container");
+  container.querySelectorAll('.rock').forEach(r=>r.remove());
+
   for(let i=0;i<5;i++){
-    // random offset 0–3 meters (~0.000027 degrees)
     const offsetLat=(Math.random()-0.5)*0.000054;
     const offsetLng=(Math.random()-0.5)*0.000054;
-    rocks.push({lat:target.lat+offsetLat,lng:target.lng+offsetLng,el:null});
+    const el = document.createElement('div'); el.className='rock';
+    container.appendChild(el);
+    rocks.push({lat:target.lat+offsetLat,lng:target.lng+offsetLng,el});
   }
-  const container=document.getElementById("scanner-container");
-  container.querySelectorAll('.rock').forEach(r=>r.remove());
-  rocks.forEach(r=>{
-    const el=document.createElement('div'); el.className='rock'; container.appendChild(el); r.el=el;
-  });
 }
 
-function startGPS() {
+// --- GPS & Radar Updates ---
+function startGPS(){
   if(!navigator.geolocation){alert("Geolocation not supported"); return;}
   watchId = navigator.geolocation.watchPosition(pos=>{
     const lat=pos.coords.latitude, lng=pos.coords.longitude;
     const target = PROSPECTING_LOCATIONS[TARGET_INDEX];
     gpsBox.textContent=`GPS: ${lat.toFixed(6)}, ${lng.toFixed(6)}`;
     targetBox.textContent=`Target: ${target.lat.toFixed(6)}, ${target.lng.toFixed(6)}`;
-    const d=distance(lat,lng,target.lat,target.lng);
-    const br=bearing(lat,lng,target.lat,target.lng);
+    const d = distance(lat,lng,target.lat,target.lng);
+    const br = bearing(lat,lng,target.lat,target.lng);
     distanceBox.textContent=`Distance: ${d.toFixed(1)} m`;
     bearingBox.textContent=`Bearing: ${br.toFixed(0)}°`;
     accuracyBox.textContent=`Accuracy: ${pos.coords.accuracy} m`;
-
     compassBox.textContent=`Compass: ${compassHeading.toFixed(0)}°`;
+    hotcoldBox.textContent = d<target.radius ? "HOT" : "COLD";
+    proximityFill.style.width = `${Math.min(100,(d/target.radius*100))}%`;
 
-    hotcoldBox.textContent=d<target.radius?"HOT":"COLD";
-    proximityFill.style.width=`${Math.min(100,(d/target.radius*100))}%`;
-
-    // update rocks position
     rocks.forEach(r=>{
-      const dx=(r.lng-lng)*85000; // approx conversion for display
+      const dx=(r.lng-lng)*85000;
       const dy=(r.lat-lat)*111000;
-      const dist=Math.sqrt(dx*dx+dy*dy);
+      const dist = Math.sqrt(dx*dx + dy*dy);
       if(dist<20){
-        const s=0.5+0.5*(20-dist)/20;
-        r.el.style.opacity=1; r.el.style.transform=`translate(${dx*2}px,${-dy*2}px) scale(${s})`;
+        const s = 0.3 + 0.3*(20-dist)/20;
+        r.el.style.opacity = 1; r.el.style.transform=`translate(${dx*2}px,${-dy*2}px) scale(${s})`;
         if(dist<5){navigator.vibrate([100,50,100]);}
-      }else{
-        r.el.style.opacity=0; r.el.style.transform=`scale(0)`;
-      }
+      } else { r.el.style.opacity=0; r.el.style.transform=`scale(0)`; }
     });
-  },err=>{console.error(err);},{enableHighAccuracy:true, maximumAge:1000});
+  }, err=>{console.error(err);},{enableHighAccuracy:true, maximumAge:1000});
 }
 
 function distance(lat1,lon1,lat2,lon2){
@@ -220,6 +210,7 @@ function bearing(lat1,lon1,lat2,lon2){
   return (Math.atan2(y,x)*180/Math.PI+360)%360;
 }
 
+// --- Radar Sweep ---
 function animateRadar(){
   let angle=0;
   setInterval(()=>{
@@ -229,12 +220,12 @@ function animateRadar(){
   },50);
 }
 
-// device orientation for compass
+// --- Compass ---
 window.addEventListener("deviceorientationabsolute",e=>{
   if(e.alpha!=null){ compassHeading = e.alpha; }
 });
 
-// QR scanner logic
+// --- QR Scanner ---
 scanBtn.addEventListener('click', startQR);
 toggleCamBtn.addEventListener('click', toggleCamera);
 
@@ -265,11 +256,11 @@ function scanFrame(){
   else requestAnimationFrame(scanFrame);
 }
 
-function updateDisplay(){ /* could add extra display refresh if needed */ }
-
+// --- Misc ---
+function updateDisplay(){ /* extra UI refresh if needed */ }
 startBtn.addEventListener('click',()=>{alert('Scanner activated!');});
 
-init();
+initScanner();
 </script>
 </body>
 </html>
