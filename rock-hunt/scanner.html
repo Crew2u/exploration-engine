@@ -4,7 +4,6 @@
 <meta charset="UTF-8">
 <title>Futuristic Prospecting Scanner</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-
 <style>
 body {
   margin:0;
@@ -21,7 +20,6 @@ h1 {
   text-align:center;
   text-shadow:0 0 10px #0f0,0 0 20px #0f0555;
 }
-
 #deviceFrame {
   width:400px;
   height:400px;
@@ -34,7 +32,6 @@ h1 {
   position:relative;
   background:#001100;
 }
-
 #scanner-container {
   width:360px;
   height:360px;
@@ -45,7 +42,6 @@ h1 {
   box-shadow: inset 0 0 30px #00ff0044,0 0 40px #00ff0088;
   border:3px solid #00ff00;
 }
-
 #overlayPulse {
   position:absolute;
   inset:0;
@@ -54,12 +50,7 @@ h1 {
   animation:pulse 2s infinite alternate;
   z-index:1;
 }
-
-@keyframes pulse {
-  from { transform:scale(0.97); opacity:0.7; }
-  to { transform:scale(1); opacity:1; }
-}
-
+@keyframes pulse { from { transform:scale(0.97); opacity:0.7; } to { transform:scale(1); opacity:1; } }
 #radarSweep {
   position:absolute;
   inset:0;
@@ -68,7 +59,6 @@ h1 {
   filter:blur(1px);
   z-index:2;
 }
-
 #radarArc {
   position:absolute;
   inset:0;
@@ -76,7 +66,6 @@ h1 {
   box-shadow:0 0 20px #00ff44 inset,0 0 30px #00ff4488 inset;
   z-index:3;
 }
-
 #arrow {
   position:absolute;
   bottom:50%;
@@ -90,7 +79,6 @@ h1 {
   box-shadow:0 0 8px #ff4444,0 0 20px #ff4444aa;
   z-index:5;
 }
-
 .rock {
   position:absolute;
   width:4px;
@@ -102,117 +90,41 @@ h1 {
   transition:transform 0.15s linear,opacity 0.4s ease,width 0.3s ease,height 0.3s ease;
   z-index:7;
 }
-
-#info {
-  width:90%;
-  max-width:360px;
-  margin-top:10px;
-}
-
-.box {
-  border:1px solid #00ff0044;
-  background:#001100aa;
-  padding:6px;
-  margin:4px 0;
-  border-radius:6px;
+#qrOverlay {
+  position:absolute;
+  inset:0;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  color:#ff0;
+  font-weight:bold;
+  font-size:1.1em;
   text-align:center;
-}
-
-select,button {
-  margin:8px 0;
-  padding:10px;
-  border-radius:8px;
-  border:none;
-  background:#00ff00;
-  color:#000;
-  font-size:1em;
-}
-
-#scanRock {
-  background:#ff4444;
-  color:#fff;
-  font-weight:bold;
-}
-
-#proximityMeter {
-  width:90%;
-  max-width:360px;
-  height:18px;
-  border-radius:10px;
-  overflow:hidden;
-  border:1px solid #00ff44;
-  background:#003322;
-}
-#proximityFill {
-  height:100%;
-  width:0%;
-  background:#ff4444;
-  transition:width 0.3s ease;
-}
-
-/* ===== MAP OVERLAY WITH SCIFI GRID ===== */
-#mapOverlay {
-  display:none;
-  position:absolute;
-  top:0; left:0;
-  width:100%; height:100%;
-  border-radius:30px;
-  overflow:hidden;
-  z-index:100;
-}
-#mapOverlay iframe {
-  width:100%;
-  height:100%;
-  border:none;
-  filter:brightness(0.7) contrast(1.2) saturate(1.3) hue-rotate(90deg) drop-shadow(0 0 6px #00ff44);
-}
-#mapFilter {
-  position:absolute;
-  inset:0;
+  z-index:8;
   pointer-events:none;
-  z-index:101;
 }
-#mapGrid {
-  position:absolute;
-  inset:0;
-  background:
-    repeating-linear-gradient(0deg,rgba(0,255,0,0.05) 0px,rgba(0,255,0,0.05) 1px,transparent 1px,transparent 20px),
-    repeating-linear-gradient(90deg,rgba(0,255,0,0.05) 0px,rgba(0,255,0,0.05) 1px,transparent 1px,transparent 20px);
-  mix-blend-mode:screen;
-  animation:moveGrid 4s linear infinite;
-}
-@keyframes moveGrid {
-  from {background-position:0 0, 0 0;}
-  to {background-position:40px 40px, 40px 40px;}
-}
-#mapClose {
-  position:absolute;
-  top:8px; right:8px;
-  z-index:102;
-  background:#ff4444;
-  color:#fff;
-  border:none;
-  border-radius:6px;
-  padding:6px 10px;
-  cursor:pointer;
-  font-weight:bold;
-}
+#info { width:90%; max-width:360px; margin-top:10px; }
+.box { border:1px solid #00ff0044; background:#001100aa; padding:6px; margin:4px 0; border-radius:6px; text-align:center; }
+select,button { margin:8px 0; padding:10px; border-radius:8px; border:none; background:#00ff00; color:#000; font-size:1em; }
+#scanRock { background:#ff4444; color:#fff; font-weight:bold; }
+#proximityMeter { width:90%; max-width:360px; height:18px; border-radius:10px; overflow:hidden; border:1px solid #00ff44; background:#003322; }
+#proximityFill { height:100%; width:0%; background:#ff4444; transition:width 0.3s ease; }
+#videoPreview { display:none; position:absolute; width:360px; height:360px; border-radius:50%; top:0; left:0; object-fit:cover; z-index:0; }
 </style>
 </head>
-
 <body>
-<h1>Futuristic Prospecting Scanner</h1>
 
-<select id="locationSelect">
-  <option>Loading locations…</option>
-</select>
+<h1>Futuristic Prospecting Scanner</h1>
+<select id="locationSelect"><option>Loading locations…</option></select>
 
 <div id="deviceFrame">
   <div id="scanner-container">
+    <video id="videoPreview" autoplay></video>
     <div id="overlayPulse"></div>
     <div id="radarSweep"></div>
     <div id="radarArc"></div>
     <div id="arrow"></div>
+    <div id="qrOverlay"></div>
   </div>
 </div>
 
@@ -225,29 +137,17 @@ select,button {
 </div>
 
 <div id="proximityMeter"><div id="proximityFill"></div></div>
-
 <button id="scanRock">SCAN ROCK</button>
 
-<!-- Map Overlay -->
-<div id="mapOverlay">
-  <iframe id="mapFrame"></iframe>
-  <div id="mapFilter"></div>
-  <div id="mapGrid"></div>
-  <button id="mapClose">X</button>
-</div>
-
+<script src="https://cdn.jsdelivr.net/npm/jsqr/dist/jsQR.js"></script>
 <script src="locations.js"></script>
 <script>
-/* ========= SAFE LOCATIONS ========= */
+/* ========= SAFE LOCATION LOADER ========= */
 const FALLBACK_LOCATIONS = [
   { name:"Test Zone Alpha", lat:-26.6415, lng:152.9112 },
   { name:"Test Zone Bravo", lat:-26.6422, lng:152.9120 }
 ];
-function getLocations(){
-  if(Array.isArray(window.PROSPECTING_LOCATIONS) && window.PROSPECTING_LOCATIONS.length)
-    return window.PROSPECTING_LOCATIONS;
-  return FALLBACK_LOCATIONS;
-}
+function getLocations(){ return Array.isArray(window.PROSPECTING_LOCATIONS)&&window.PROSPECTING_LOCATIONS.length ? window.PROSPECTING_LOCATIONS : FALLBACK_LOCATIONS; }
 
 /* ========= CORE SYSTEM ========= */
 let LOCATIONS,targetIndex=0,currentLat=null,currentLon=null,heading=0,rocks=[];
@@ -257,141 +157,63 @@ const arrow=document.getElementById("arrow");
 const sweep=document.getElementById("radarSweep");
 const select=document.getElementById("locationSelect");
 const fill=document.getElementById("proximityFill");
-const overlayPulse=document.getElementById("overlayPulse");
-const mapOverlay=document.getElementById("mapOverlay");
-const mapFrame=document.getElementById("mapFrame");
-const mapClose=document.getElementById("mapClose");
+const video=document.getElementById("videoPreview");
+const qrOverlay=document.getElementById("qrOverlay");
 
-/* ========= SPAWN ROCKS ========= */
 function spawnRocks(){
-  rocks.forEach(r=>r.el.remove());
-  rocks=[];
+  rocks.forEach(r=>r.el.remove()); rocks=[];
   const t=LOCATIONS[targetIndex];
   for(let i=0;i<6;i++){
-    const el=document.createElement("div");
-    el.className="rock";
-    scanner.appendChild(el);
-    rocks.push({
-      el,
-      lat:t.lat+(Math.random()-0.5)*0.00004,
-      lng:t.lng+(Math.random()-0.5)*0.00004
-    });
+    const el=document.createElement("div"); el.className="rock"; scanner.appendChild(el);
+    rocks.push({el,lat:t.lat+(Math.random()-0.5)*0.00004,lng:t.lng+(Math.random()-0.5)*0.00004});
   }
 }
 
-/* ========= DISTANCE ========= */
-function hav(a,b,c,d){
-  const R=6371000, dLat=(c-a)*Math.PI/180, dLon=(d-b)*Math.PI/180;
-  const x=Math.sin(dLat/2)**2 + Math.cos(a*Math.PI/180)*Math.cos(c*Math.PI/180)*Math.sin(dLon/2)**2;
-  return R*2*Math.atan2(Math.sqrt(x), Math.sqrt(1-x));
-}
+function hav(a,b,c,d){ const R=6371000,dLat=(c-a)*Math.PI/180,dLon=(d-b)*Math.PI/180; const x=Math.sin(dLat/2)**2+Math.cos(a*Math.PI/180)*Math.cos(c*Math.PI/180)*Math.sin(dLon/2)**2; return R*2*Math.atan2(Math.sqrt(x),Math.sqrt(1-x)); }
 
-/* ========= UPDATE ROCKS ========= */
-function updateRocks(){
-  if(currentLat===null) return;
-  const lonScale=Math.cos(currentLat*Math.PI/180)*111320;
-  rocks.forEach(r=>{
-    const d=hav(currentLat,currentLon,r.lat,r.lng);
-    if(d>MAX_VIS){ r.el.style.opacity=0; return; }
-    const scale=Math.pow((MAX_VIS-d)/MAX_VIS,0.8);
-    const dx=(r.lng-currentLon)*lonScale;
-    const dy=(r.lat-currentLat)*111000;
-    const x=180+dx/MAX_VIS*RADAR_R;
-    const y=180-dy/MAX_VIS*RADAR_R;
-    r.el.style.transform=`translate(${x}px,${y}px)`;
-    r.el.style.width=r.el.style.height=(4+scale*12)+"px";
-    r.el.style.opacity=scale;
-  });
-}
+function updateRocks(){ if(currentLat===null) return; rocks.forEach(r=>{ const d=hav(currentLat,currentLon,r.lat,r.lng); if(d>MAX_VIS){ r.el.style.opacity=0; return; } const scale=(MAX_VIS-d)/MAX_VIS; const dx=(r.lng-currentLon)*90000; const dy=(r.lat-currentLat)*111000; const x=180+dx/MAX_VIS*RADAR_R; const y=180-dy/MAX_VIS*RADAR_R; r.el.style.transform=`translate(${x}px,${y}px)`; r.el.style.width=r.el.style.height=(4+scale*10)+"px"; r.el.style.opacity=scale; }); }
 
-/* ========= ANIMATION ========= */
-function animate(){
-  sweep.style.transform=`rotate(${Date.now()/25%360}deg)`;
-  updateRocks();
-  requestAnimationFrame(animate);
-}
+function animate(){ sweep.style.transform=`rotate(${Date.now()/25%360}deg)`; updateRocks(); requestAnimationFrame(animate); }
 
-/* ========= BEARING ========= */
-function calculateBearing(lat1, lon1, lat2, lon2){
-  const φ1=lat1*Math.PI/180, φ2=lat2*Math.PI/180;
-  const Δλ=(lon2-lon1)*Math.PI/180;
-  const y=Math.sin(Δλ)*Math.cos(φ2);
-  const x=Math.cos(φ1)*Math.sin(φ2)-Math.sin(φ1)*Math.cos(φ2)*Math.cos(Δλ);
-  let θ=Math.atan2(y,x)*180/Math.PI;
-  return (θ+360)%360;
-}
+function startGPS(){ navigator.geolocation.watchPosition(p=>{ currentLat=p.coords.latitude; currentLon=p.coords.longitude; const t=LOCATIONS[targetIndex]; const d=hav(currentLat,currentLon,t.lat,t.lng); document.getElementById("gps").textContent=`${currentLat.toFixed(6)}, ${currentLon.toFixed(6)}`; document.getElementById("accuracy").textContent=`Accuracy ±${p.coords.accuracy.toFixed(1)}m`; document.getElementById("distance").textContent=`Distance: ${d.toFixed(1)}m`; document.getElementById("target").textContent=`Target: ${t.name}`; fill.style.width=Math.max(0,Math.min(100,(1-d/40)*100))+"%"; if(d<6 && navigator.vibrate) navigator.vibrate([80,40,80]); },console.error,{enableHighAccuracy:true}); }
 
-/* ========= GPS & DIRECTION ========= */
-function startGPS(){
-  if(!navigator.geolocation){ document.getElementById("gps").textContent="GPS not supported"; return; }
-  navigator.geolocation.watchPosition(p=>{
-    currentLat=p.coords.latitude;
-    currentLon=p.coords.longitude;
-    const t=LOCATIONS[targetIndex];
-    const d=hav(currentLat,currentLon,t.lat,t.lng);
-    
-    document.getElementById("gps").textContent=`${currentLat.toFixed(6)}, ${currentLon.toFixed(6)}`;
-    document.getElementById("accuracy").textContent=`Accuracy ±${p.coords.accuracy.toFixed(1)}m`;
-    document.getElementById("distance").textContent=`Distance: ${d.toFixed(1)}m`;
-    document.getElementById("target").textContent=`Target: ${t.name}`;
-    
-    fill.style.width=Math.max(0,Math.min(100,(1-d/40)*100))+"%";
-    if(d<6 && navigator.vibrate) navigator.vibrate([80,40,80]);
+window.addEventListener("deviceorientation",e=>{ if(e.alpha!=null){ heading=360-e.alpha; arrow.style.transform=`translateX(-50%) rotate(${heading}deg)`; document.getElementById("compass").textContent=`Compass: ${heading.toFixed(0)}°`; } });
 
-    if(d>100){
-      arrow.style.display="none";
-      mapOverlay.style.display="block";
-      mapFrame.src=`https://www.google.com/maps/embed/v1/directions?key=YOUR_GOOGLE_MAPS_API_KEY&origin=${currentLat},${currentLon}&destination=${t.lat},${t.lng}&mode=driving`;
-    } else {
-      mapOverlay.style.display="none";
-      arrow.style.display="block";
+/* ========= QR SCANNER ========= */
+document.getElementById("scanRock").addEventListener("click", async ()=>{
+  qrOverlay.textContent="Scanning...";
+  try {
+    const stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:"environment"}});
+    video.srcObject=stream; video.style.display="block";
+    const canvas=document.createElement("canvas"); const ctx=canvas.getContext("2d");
+    function scanFrame(){
+      if(video.readyState===video.HAVE_ENOUGH_DATA){
+        canvas.width=video.videoWidth; canvas.height=video.videoHeight;
+        ctx.drawImage(video,0,0,canvas.width,canvas.height);
+        const imgData=ctx.getImageData(0,0,canvas.width,canvas.height);
+        const code=jsQR(imgData.data,imgData.width,imgData.height);
+        if(code){
+          qrOverlay.textContent=`QR FOUND: ${code.data}`;
+          stream.getTracks().forEach(t=>t.stop());
+          video.style.display="none";
+          return;
+        }
+      }
+      requestAnimationFrame(scanFrame);
     }
-
-  },console.error,{enableHighAccuracy:true, maximumAge:500, timeout:5000});
-}
-
-/* ========= DEVICE ORIENTATION ========= */
-window.addEventListener("deviceorientation", e=>{
-  if(currentLat===null || e.alpha===null) return;
-  heading=360-e.alpha;
-  const t=LOCATIONS[targetIndex];
-  const d=hav(currentLat,currentLon,t.lat,t.lng);
-  if(d<=100){
-    const bearing=calculateBearing(currentLat,currentLon,t.lat,t.lng);
-    const angle=(bearing-heading+360)%360;
-    arrow.style.transform=`translateX(-50%) rotate(${angle}deg)`;
-  }
-  document.getElementById("compass").textContent=`Compass: ${heading.toFixed(0)}°`;
+    scanFrame();
+  } catch(e){ qrOverlay.textContent="Camera access denied"; }
 });
 
-/* ========= MAP CLOSE BUTTON ========= */
-mapClose.addEventListener("click", ()=>{
-  mapOverlay.style.display="none";
-});
-
-/* ========= INITIALIZATION ========= */
-function initScanner(){
+/* ========= INIT ========= */
+function init(){
   LOCATIONS=getLocations();
   select.innerHTML="";
-  LOCATIONS.forEach((l,i)=>{
-    const o=document.createElement("option");
-    o.value=i;
-    o.textContent=l.name;
-    select.appendChild(o);
-  });
+  LOCATIONS.forEach((l,i)=>{ const o=document.createElement("option"); o.value=i; o.textContent=l.name; select.appendChild(o); });
   select.onchange=()=>{ targetIndex=+select.value; spawnRocks(); };
-  spawnRocks();
-  startGPS();
-  animate();
+  spawnRocks(); startGPS(); animate();
 }
-window.addEventListener("load",()=>setTimeout(initScanner,50));
-
-/* ========= SCAN ROCK EFFECT ========= */
-document.getElementById("scanRock").addEventListener("click", ()=>{
-  overlayPulse.style.animation="scanPulse 0.8s ease-in-out";
-  setTimeout(()=>{ overlayPulse.style.animation="pulse 2s infinite alternate"; },800);
-  if(navigator.vibrate) navigator.vibrate([50,30,50]);
-});
+init();
 </script>
 </body>
 </html>
