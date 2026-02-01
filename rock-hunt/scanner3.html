@@ -31,12 +31,6 @@ h1 {
   pointer-events:none; transform:rotate(0deg); z-index:2; filter:blur(2px); 
 }
 
-#radarSweep::after {
-  content:''; position:absolute; width:100%; height:100%; border-radius:50%;
-  background:conic-gradient(rgba(0,255,0,0.1) 0deg, rgba(0,255,0,0) 360deg);
-  filter:blur(6px); z-index:-1; top:0; left:0;
-}
-
 #radarArc { 
   position:absolute; width:100%; height:100%; border-radius:50%;
   box-shadow:0 0 20px #00ff44 inset, 0 0 30px #00ff4488 inset; z-index:3; pointer-events:none; 
@@ -66,10 +60,8 @@ h1 {
 
 .rock { 
   position:absolute; border-radius:50%; box-shadow:0 0 8px #ffff00,0 0 16px #ffff0055;
-  cursor:pointer; z-index:7; animation:rockPulse 1s infinite alternate; 
+  cursor:pointer; z-index:7; 
 }
-
-@keyframes rockPulse { 0% { transform:scale(1); } 100% { transform:scale(1.4); } }
 
 #qrVideo { display:none; position:absolute; width:360px; height:360px; top:0; left:0; border-radius:50%; object-fit:cover; z-index:0; }
 #qrOverlay { position:absolute; width:360px; height:360px; top:0; left:0; border-radius:50%; pointer-events:none; z-index:6; box-shadow:0 0 30px #0f0 inset; }
@@ -131,7 +123,8 @@ function initScanner(){
   
   let TARGET_INDEX=0, currentLat=null, currentLon=null, compassHeading=null, smoothAngle=0, sweepAngle=0;
   let rocks=[], cameraStream=null, qrActive=false;
-  
+  const audioCtx = new (window.AudioContext || window.webkitAudioContext)(); // sonar audio
+
   const arrow=document.getElementById("arrow");
   const select=document.getElementById("locationSelect");
   const proximityFill=document.getElementById("proximityFill");
@@ -139,7 +132,6 @@ function initScanner(){
   const toggleCamBtn=document.getElementById("toggleCamera");
   const scannerDiv=document.getElementById("scanner-container");
   const radarSweep=document.getElementById("radarSweep");
-  const radarArc=document.getElementById("radarArc");
   const radarRings=document.getElementById("radarRings");
   const qrVideo=document.getElementById("qrVideo");
   const deviceFrame=document.getElementById("deviceFrame");
@@ -152,12 +144,7 @@ function initScanner(){
 
   select.innerHTML=""; PROSPECTING_LOCATIONS.forEach((loc,i)=>{ const opt=document.createElement('option'); opt.value=i; opt.textContent=loc.name; select.appendChild(opt);});
   select.value=0;
-
-  select.addEventListener('change',()=>{
-    TARGET_INDEX=parseInt(select.value);
-    spawnRocks();
-    update();
-  });
+  select.addEventListener('change',()=>{ TARGET_INDEX=parseInt(select.value); spawnRocks(); update(); });
 
   function spawnRocks(){
     rocks.forEach(r=>r.remove()); rocks.length=0;
@@ -167,28 +154,43 @@ function initScanner(){
       rock.style.background=['#ffcc00','#cccccc','#44ccff','#ff44ff'][Math.floor(Math.random()*4)];
       rock.style.width='20px'; rock.style.height='20px';
       rock.dataset.angle=Math.random()*2*Math.PI;  
-      rock.dataset.radius=Math.random()*50+10;     
-      scannerDiv.appendChild(rock); rocks.push(rock);
+      rock.dataset.radius=Math.random()*80+50;  
+      rock.dataset.x=180; rock.dataset.y=180; // current display position
+      rocks.push(rock);
+      scannerDiv.appendChild(rock);
     }
   }
 
   function updateRocks(distToTarget){
-    const target=getTarget();
+    const maxRadius=160;
     rocks.forEach(rock=>{
-      // Gradual appearance
-      let alpha=Math.max(0, Math.min(1, 1-(distToTarget/100)));
-      rock.style.display=alpha>0.05?'block':'none';
-      rock.style.opacity=alpha;
-
-      if(alpha<=0) return;
-      const baseRadius=parseFloat(rock.dataset.radius);
-      const radius=Math.max(2, baseRadius*(distToTarget/50)); 
+      let normalized=Math.min(1, distToTarget/100);
+      let radius=maxRadius*normalized;
+      if(distToTarget<1) radius=0;
       const angle=parseFloat(rock.dataset.angle);
-      const x=180 + Math.cos(angle-(compassHeading||0)*Math.PI/180)*radius - parseFloat(rock.style.width)/2;
-      const y=180 + Math.sin(angle-(compassHeading||0)*Math.PI/180)*radius - parseFloat(rock.style.height)/2;
-      rock.style.left=x+'px'; rock.style.top=y+'px';
-      rock.style.width=rock.style.height=(10 + (5/distToTarget*50))+'px';
+      const targetX=180 + Math.cos(angle-(compassHeading||0)*Math.PI/180)*radius - 10;
+      const targetY=180 + Math.sin(angle-(compassHeading||0)*Math.PI/180)*radius - 10;
+
+      // Smooth motion along arc
+      rock.dataset.x=rock.dataset.x*0.85 + targetX*0.15;
+      rock.dataset.y=rock.dataset.y*0.85 + targetY*0.15;
+      const scale=Math.max(0.3, 1-normalized*0.7);
+      rock.style.transform=`translate(${rock.dataset.x}px,${rock.dataset.y}px) scale(${scale})`;
+      rock.style.opacity=0.3+0.7*(1-normalized);
+
+      // sonar ping
+      if(distToTarget<30) playPing(0.05 + 0.5*(1-normalized));
     });
+  }
+
+  function playPing(vol){
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.frequency.value = 1000;
+    gain.gain.value = vol;
+    osc.start(); osc.stop(audioCtx.currentTime+0.05);
   }
 
   function update(){
@@ -197,7 +199,7 @@ function initScanner(){
     const dist=haversine(currentLat,currentLon,target.lat,target.lng);
     const bear=bearing(currentLat,currentLon,target.lat,target.lng);
     const relative=(bear-compassHeading+360)%360;
-    smoothAngle+=(relative-smoothAngle)*0.12; // smoother
+    smoothAngle+=(relative-smoothAngle)*0.12;
     arrow.style.transform=`translateX(-50%) rotate(${smoothAngle}deg)`;
 
     document.getElementById("target").textContent=`Target: ${target.name} (${target.lat.toFixed(6)}, ${target.lng.toFixed(6)})`;
@@ -213,12 +215,9 @@ function initScanner(){
     else hotcold='🥶 Very Cold', colorShift='#0044ff';
     document.getElementById("hotcold").textContent=`Proximity: ${hotcold}`;
 
-    // Proximity effects
     deviceFrame.style.boxShadow=`0 0 ${10+(50/dist)}px ${colorShift} inset, 0 0 ${20+(100/dist)}px ${colorShift}88 inset`;
     deviceFrame.style.borderColor=colorShift;
-
-    const pct=Math.min(1,200/dist);
-    proximityFill.style.width=`${(pct*100).toFixed(1)}%`;
+    proximityFill.style.width=`${Math.min(1,200/dist)*100}%`;
     radarArc.style.boxShadow=`0 0 ${10+(50/dist)}px ${colorShift} inset, 0 0 ${20+(100/dist)}px ${colorShift}88 inset`;
 
     updateRocks(dist);
@@ -253,7 +252,6 @@ function initScanner(){
   async function start(){
     createRings(); spawnRocks(); animateSweep();
 
-    // Device orientation permission handling
     if(typeof DeviceOrientationEvent!=="undefined"){
       if(typeof DeviceOrientationEvent.requestPermission==="function"){
         const res=await DeviceOrientationEvent.requestPermission();
@@ -262,9 +260,7 @@ function initScanner(){
       window.addEventListener("deviceorientation",e=>{
         if(e.alpha!==null){ compassHeading=360-e.alpha; update();}
       },true);
-    } else {
-      alert("Device orientation not supported. Compass will be inactive.");
-    }
+    } else { alert("Device orientation not supported. Compass will be inactive."); }
 
     startGPS();
   }
