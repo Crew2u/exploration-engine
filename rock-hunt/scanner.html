@@ -60,6 +60,13 @@ h1 {
   to { transform:scale(1); opacity:1; }
 }
 
+/* SCAN ROCK PULSE */
+@keyframes scanPulse {
+  0% { transform: scale(1); opacity:0.3; box-shadow:0 0 40px #00ff44 inset,0 0 60px #00ff4488 inset; }
+  50% { transform: scale(1.1); opacity:0.8; box-shadow:0 0 60px #00ff44 inset,0 0 100px #00ff4488 inset; }
+  100% { transform: scale(1); opacity:0.3; box-shadow:0 0 40px #00ff44 inset,0 0 60px #00ff4488 inset; }
+}
+
 #radarSweep {
   position:absolute;
   inset:0;
@@ -99,7 +106,7 @@ h1 {
   background:#ffcc00;
   box-shadow:0 0 6px #ffcc00,0 0 12px #ffcc0055;
   opacity:0;
-  transition:transform 0.15s linear,opacity 0.4s ease,width 0.3s ease,height 0.3s ease, box-shadow 0.3s ease, background 0.3s ease;
+  transition:transform 0.15s linear,opacity 0.4s ease,width 0.3s ease,height 0.3s ease;
   z-index:7;
 }
 
@@ -180,13 +187,14 @@ select,button {
 
 <button id="scanRock">SCAN ROCK</button>
 
+<!-- External locations (optional, safe) -->
 <script src="locations.js"></script>
 
 <script>
 /* ========= SAFE LOCATION LOADER ========= */
 const FALLBACK_LOCATIONS = [
-  { name:"Test Zone Alpha", lat:-26.6415, lng:152.9112, rarities:["common","common","rare","common","epic","common"] },
-  { name:"Test Zone Bravo", lat:-26.6422, lng:152.9120, rarities:["common","rare","common","common","common","epic"] }
+  { name:"Test Zone Alpha", lat:-26.6415, lng:152.9112 },
+  { name:"Test Zone Bravo", lat:-26.6422, lng:152.9120 }
 ];
 
 function getLocations() {
@@ -198,26 +206,17 @@ function getLocations() {
 }
 
 /* ========= CORE SYSTEM ========= */
-let LOCATIONS, targetIndex=0, currentLat=null, currentLon=null, heading=0, rocks=[];
+let LOCATIONS,targetIndex=0,currentLat=null,currentLon=null,heading=0,rocks=[];
 
-const MAX_VIS=25, RADAR_R=160;
+const MAX_VIS=25,RADAR_R=160;
+
 const scanner=document.getElementById("scanner-container");
 const arrow=document.getElementById("arrow");
 const sweep=document.getElementById("radarSweep");
 const select=document.getElementById("locationSelect");
 const fill=document.getElementById("proximityFill");
+const overlayPulse=document.getElementById("overlayPulse");
 
-// Map rarity to color
-function getRockColor(rarity){
-  switch(rarity){
-    case "common": return "#ffcc00";
-    case "rare": return "#00ccff";
-    case "epic": return "#ff00ff";
-    default: return "#ffcc00";
-  }
-}
-
-// Spawn rocks with rarity
 function spawnRocks(){
   rocks.forEach(r=>r.el.remove());
   rocks=[];
@@ -226,53 +225,45 @@ function spawnRocks(){
     const el=document.createElement("div");
     el.className="rock";
     scanner.appendChild(el);
-    const rarity = (t.rarities && t.rarities[i]) || "common";
-    const color = getRockColor(rarity);
-    el.style.background=color;
-    el.style.boxShadow=`0 0 6px ${color},0 0 12px ${color}55`;
-    rocks.push({el, lat:t.lat+(Math.random()-0.5)*0.00004, lng:t.lng+(Math.random()-0.5)*0.00004, rarity});
+    rocks.push({
+      el,
+      lat:t.lat+(Math.random()-0.5)*0.00004,
+      lng:t.lng+(Math.random()-0.5)*0.00004
+    });
   }
 }
 
-// Distance calculation
 function hav(a,b,c,d){
-  const R=6371000;
-  const dLat=(c-a)*Math.PI/180;
-  const dLon=(d-b)*Math.PI/180;
-  const x=Math.sin(dLat/2)**2 + Math.cos(a*Math.PI/180)*Math.cos(c*Math.PI/180)*Math.sin(dLon/2)**2;
+  const R=6371000,dLat=(c-a)*Math.PI/180,dLon=(d-b)*Math.PI/180;
+  const x=Math.sin(dLat/2)**2+Math.cos(a*Math.PI/180)*Math.cos(c*Math.PI/180)*Math.sin(dLon/2)**2;
   return R*2*Math.atan2(Math.sqrt(x),Math.sqrt(1-x));
 }
 
-// Update rocks positions
 function updateRocks(){
   if(currentLat===null) return;
+  const lonScale=Math.cos(currentLat*Math.PI/180)*111320;
   rocks.forEach(r=>{
     const d=hav(currentLat,currentLon,r.lat,r.lng);
     if(d>MAX_VIS){ r.el.style.opacity=0; return; }
-    const scale=(MAX_VIS-d)/MAX_VIS;
-    const dx=(r.lng-currentLon)*90000;
+    const scale=Math.pow((MAX_VIS-d)/MAX_VIS,0.8);
+    const dx=(r.lng-currentLon)*lonScale;
     const dy=(r.lat-currentLat)*111000;
-    const x=180 + dx/MAX_VIS*RADAR_R;
-    const y=180 - dy/MAX_VIS*RADAR_R;
+    const x=180+dx/MAX_VIS*RADAR_R;
+    const y=180-dy/MAX_VIS*RADAR_R;
     r.el.style.transform=`translate(${x}px,${y}px)`;
-    r.el.style.width = r.el.style.height = (4+scale*10)+"px";
-    r.el.style.opacity = scale;
+    r.el.style.width=r.el.style.height=(4+scale*12)+"px";
+    r.el.style.opacity=scale;
   });
 }
 
-// Animate radar
 function animate(){
   sweep.style.transform=`rotate(${Date.now()/25%360}deg)`;
   updateRocks();
   requestAnimationFrame(animate);
 }
 
-// Initialize GPS with error handling
 function startGPS(){
-  if(!navigator.geolocation){
-    document.getElementById("gps").textContent="GPS not supported!";
-    return;
-  }
+  if(!navigator.geolocation){ document.getElementById("gps").textContent="GPS not supported!"; return; }
   navigator.geolocation.watchPosition(p=>{
     currentLat=p.coords.latitude;
     currentLon=p.coords.longitude;
@@ -284,14 +275,9 @@ function startGPS(){
     document.getElementById("target").textContent=`Target: ${t.name}`;
     fill.style.width=Math.max(0,Math.min(100,(1-d/40)*100))+"%";
     if(d<6 && navigator.vibrate) navigator.vibrate([80,40,80]);
-  }, err=>{
-    console.error(err);
-    document.getElementById("gps").textContent="GPS error: "+err.message;
-    document.getElementById("accuracy").textContent="—";
-  }, { enableHighAccuracy:true, timeout:10000, maximumAge:0 });
+  },console.error,{enableHighAccuracy:true});
 }
 
-// Device orientation
 window.addEventListener("deviceorientation",e=>{
   if(e.alpha!=null){
     heading=360-e.alpha;
@@ -300,7 +286,6 @@ window.addEventListener("deviceorientation",e=>{
   }
 });
 
-// Initialize scanner after ensuring locations loaded
 function initScanner(){
   LOCATIONS=getLocations();
   select.innerHTML="";
@@ -316,8 +301,15 @@ function initScanner(){
   animate();
 }
 
-// Wait a tick to ensure locations.js is loaded
 window.addEventListener("load",()=>setTimeout(initScanner,50));
+
+/* ========= SCAN ROCK EFFECT ========= */
+document.getElementById("scanRock").addEventListener("click",()=>{
+  overlayPulse.style.animation="scanPulse 0.8s ease-in-out";
+  setTimeout(()=>{ overlayPulse.style.animation="pulse 2s infinite alternate"; },800);
+  // Optional: sound or vibration
+  if(navigator.vibrate) navigator.vibrate([50,30,50]);
+});
 </script>
 </body>
 </html>
