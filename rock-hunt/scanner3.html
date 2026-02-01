@@ -131,7 +131,7 @@ function initScanner(){
   if(!Array.isArray(PROSPECTING_LOCATIONS)||PROSPECTING_LOCATIONS.length===0){ alert("No PROSPECTING_LOCATIONS!"); return;}
   
   let TARGET_INDEX=0, currentLat=null, currentLon=null, compassHeading=null, smoothAngle=0, sweepAngle=0;
-  let rocks=[], cameraStream=null, qrActive=false;
+  let rocks=[], cameraStream=null, qrActive=false, scannerActive=false;
 
   const arrow=document.getElementById("arrow");
   const select=document.getElementById("locationSelect");
@@ -145,6 +145,8 @@ function initScanner(){
   const deviceFrame=document.getElementById("deviceFrame");
   const qrPanel=document.getElementById("qrPanel");
   const qrIframe=qrPanel.querySelector("iframe");
+  const startBtn=document.getElementById("start");
+  let gpsWatcher=null;
 
   function getTarget(){ return PROSPECTING_LOCATIONS[TARGET_INDEX]; }
   function toRad(d){return d*Math.PI/180;}
@@ -187,8 +189,8 @@ function initScanner(){
       rock.style.transform=`translate(${rock.dataset.x}px,${rock.dataset.y}px) scale(${scale})`;
       rock.style.opacity=0.3+0.7*(1-normalized);
 
-      // Intermittent vibration when close
-      if(distToTarget<15 && navigator.vibrate && Math.random()<0.05) navigator.vibrate(120);
+      // Only intermittent vibration when very close
+      if(distToTarget<5 && navigator.vibrate && Math.random()<0.05) navigator.vibrate(120);
     });
   }
 
@@ -207,7 +209,7 @@ function initScanner(){
     document.getElementById("compass").textContent=`Compass: ${compassHeading.toFixed(1)}°`;
 
     let hotcold='', colorShift='#00ff44';
-    if(dist<=5){ hotcold='🔥 Very Hot'; colorShift='#ff4444'; triggerVibration();}
+    if(dist<=5){ hotcold='🔥 Very Hot'; colorShift='#ff4444'; }
     else if(dist<=20) hotcold='🌡️ Hot', colorShift='#ff8800';
     else if(dist<=50) hotcold='🌡️ Warm', colorShift='#ffff00';
     else if(dist<=100) hotcold='❄️ Cold', colorShift='#00aaff';
@@ -225,7 +227,7 @@ function initScanner(){
   function animateSweep(){ 
     sweepAngle=(sweepAngle+2)%360; 
     radarSweep.style.transform=`rotate(${sweepAngle}deg)`; 
-    requestAnimationFrame(animateSweep); 
+    if(scannerActive) requestAnimationFrame(animateSweep); 
   }
 
   function createRings(){
@@ -236,11 +238,9 @@ function initScanner(){
     }
   }
 
-  function triggerVibration(){ if(navigator.vibrate) navigator.vibrate(150); }
-
   function startGPS(){
     if(!navigator.geolocation){alert("Geolocation unsupported");return;}
-    navigator.geolocation.watchPosition(pos=>{
+    gpsWatcher=navigator.geolocation.watchPosition(pos=>{
       currentLat=pos.coords.latitude; currentLon=pos.coords.longitude;
       document.getElementById("gps").textContent=`You: ${currentLat.toFixed(6)}, ${currentLon.toFixed(6)}`;
       document.getElementById("accuracy").textContent=`Accuracy: ±${pos.coords.accuracy.toFixed(1)} m`;
@@ -248,7 +248,17 @@ function initScanner(){
     },err=>alert("GPS error:"+err.message),{enableHighAccuracy:true,maximumAge:0,timeout:10000});
   }
 
-  async function start(){
+  async function startScanner(){
+    if(scannerActive){
+      // Stop scanner
+      scannerActive=false;
+      startBtn.textContent="Activate Scanner";
+      if(gpsWatcher) navigator.geolocation.clearWatch(gpsWatcher);
+      window.removeEventListener("deviceorientation", deviceOrientationHandler);
+      return;
+    }
+    scannerActive=true;
+    startBtn.textContent="Deactivate Scanner";
     createRings(); spawnRocks(); animateSweep();
 
     if(typeof DeviceOrientationEvent!=="undefined"){
@@ -256,12 +266,14 @@ function initScanner(){
         const res=await DeviceOrientationEvent.requestPermission();
         if(res!=="granted"){ alert("Compass permission denied"); return; }
       }
-      window.addEventListener("deviceorientation",e=>{
-        if(e.alpha!==null){ compassHeading=360-e.alpha; update();}
-      },true);
+      window.addEventListener("deviceorientation", deviceOrientationHandler, true);
     } else { alert("Device orientation not supported. Compass will be inactive."); }
 
     startGPS();
+  }
+
+  function deviceOrientationHandler(e){
+    if(e.alpha!==null){ compassHeading=360-e.alpha; update();}
   }
 
   async function startQRScanner(){
@@ -278,29 +290,4 @@ function initScanner(){
           const imageData=ctx.getImageData(0,0,canvas.width,canvas.height);
           const code=jsQR(imageData.data,canvas.width,canvas.height);
           if(code && code.data){
-            qrVideo.srcObject.getTracks().forEach(t=>t.stop());
-            qrIframe.src=`https://www.challengeaccepted.quest/prospect-scan?rock=${code.data}`;
-            qrPanel.style.display='block';
-            return;
-          }
-        }
-        requestAnimationFrame(scanFrame);
-      }
-      requestAnimationFrame(scanFrame);
-    }catch(e){ alert("Camera QR scanning failed: "+e.message); qrActive=false;}
-  }
-
-  function toggleCamera(){
-    if(cameraStream){ cameraStream.getTracks().forEach(t=>t.stop()); qrVideo.style.display='none'; cameraStream=null; qrActive=false;}
-    else startQRScanner();
-  }
-
-  document.getElementById("start").addEventListener("click",start);
-  scanRockBtn.addEventListener("click",startQRScanner);
-  toggleCamBtn.addEventListener("click",toggleCamera);
-}
-
-setTimeout(initScanner,50);
-</script>
-</body>
-</html>
+            qrVideo.srcObject.getTracks().forEach(t
