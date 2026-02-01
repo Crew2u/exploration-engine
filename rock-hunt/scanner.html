@@ -41,9 +41,7 @@ transform-origin:bottom center; border-radius:4px; transition:transform 0.1s lin
 box-shadow:0 0 8px #ff4444,0 0 20px #ff4444AA; }
 
 .rock { position:absolute; border-radius:50%; box-shadow:0 0 8px #ffff00,0 0 16px #ffff0055;
-cursor:pointer; z-index:7; animation:rockPulse 1s infinite alternate; }
-
-@keyframes rockPulse { 0% { transform:scale(1); } 100% { transform:scale(1.4); } }
+cursor:pointer; z-index:7; opacity:0; transition:all 0.3s ease; }
 
 #qrVideo { display:none; position:absolute; width:360px; height:360px; top:0; left:0; border-radius:50%; object-fit:cover; z-index:0; }
 #qrOverlay { position:absolute; width:360px; height:360px; top:0; left:0; border-radius:50%; pointer-events:none; z-index:6; box-shadow:0 0 30px #0f0 inset; }
@@ -96,7 +94,7 @@ button, select { margin:10px 0; padding:12px 22px; font-size:1em; border-radius:
 <button id="scanRock">Start QR Scanner</button>
 <button id="toggleCamera">Toggle Camera</button>
 
-<script src="locations.js?v=12"></script>
+<script src="locations.js?v=13"></script>
 <script src="https://unpkg.com/jsqr/dist/jsQR.js"></script>
 <script>
 function initScanner(){
@@ -133,29 +131,33 @@ function initScanner(){
 
   function spawnRocks(){
     rocks.forEach(r=>r.remove()); rocks.length=0;
-    for(let i=0;i<8;i++){
+    const target=getTarget();
+    const offsets=[[0,0],[0.00003,0],[0,-0.00003],[0.00003,0.00003],[0.00003,-0.00003]]; // ~3m apart
+    offsets.forEach((off,i)=>{
       const rock=document.createElement('div'); rock.className='rock';
-      rock.dataset.rockId=['G','S','C','M'][Math.floor(Math.random()*4)]+Math.floor(Math.random()*1000);
-      rock.style.background=['#ffcc00','#cccccc','#44ccff','#ff44ff'][Math.floor(Math.random()*4)];
-      rock.style.width='20px'; rock.style.height='20px';
+      rock.dataset.rockId=['G','S','C','M'][i%4]+Math.floor(Math.random()*1000);
+      rock.style.background=['#ffcc00','#cccccc','#44ccff','#ff44ff'][i%4];
+      rock.style.width='14px'; rock.style.height='14px';
+      rock.dataset.lat=target.lat+off[0]; rock.dataset.lng=target.lng+off[1];
       rock.dataset.angle=Math.random()*2*Math.PI;  
-      rock.dataset.radius=Math.random()*50+10;     
+      rock.dataset.radius=30;     
+      rock.style.opacity=0;
       scannerDiv.appendChild(rock); rocks.push(rock);
-    }
+    });
   }
 
-  function updateRocks(distToTarget){
-    const target=getTarget();
+  function updateRocks(){
+    if(currentLat===null||currentLon===null||compassHeading===null) return;
     rocks.forEach(rock=>{
-      if(distToTarget>5){ rock.style.display='none'; return;}
-      rock.style.display='block';
-      const baseRadius=parseFloat(rock.dataset.radius);
-      const radius=Math.max(2, baseRadius*(distToTarget/5)); 
-      const angle=parseFloat(rock.dataset.angle);
+      const dist=haversine(currentLat,currentLon,parseFloat(rock.dataset.lat),parseFloat(rock.dataset.lng));
+      if(dist>20){ rock.style.opacity=0; return;}
+      rock.style.opacity=Math.min(1,1-(dist/20));
+      const radius=(30*(20-dist)/20); 
+      const angle=Math.random()*2*Math.PI; 
       const x=180 + Math.cos(angle-(compassHeading||0)*Math.PI/180)*radius - parseFloat(rock.style.width)/2;
       const y=180 + Math.sin(angle-(compassHeading||0)*Math.PI/180)*radius - parseFloat(rock.style.height)/2;
       rock.style.left=x+'px'; rock.style.top=y+'px';
-      rock.style.width=rock.style.height=(10 + (5/distToTarget*50))+'px';
+      rock.style.width=rock.style.height=(8+radius)+'px';
     });
   }
 
@@ -174,13 +176,15 @@ function initScanner(){
     document.getElementById("compass").textContent=`Compass: ${compassHeading.toFixed(1)}°`;
 
     let hotcold='';
-    if(dist<=5){ hotcold='🔥 Very Hot'; triggerVibration(); updateRocks(dist);}
+    if(dist<=5){ hotcold='🔥 Very Hot'; triggerVibration();}
     else if(dist<=20) hotcold='🌡️ Hot'; else if(dist<=50) hotcold='🌡️ Warm'; else if(dist<=100) hotcold='❄️ Cold'; else hotcold='🥶 Very Cold';
     document.getElementById("hotcold").textContent=`Proximity: ${hotcold}`;
 
     const pct=Math.min(1,200/dist);
     proximityFill.style.width=`${(pct*100).toFixed(1)}%`;
     radarArc.style.boxShadow=`0 0 ${10+(50/dist)}px #00ff44 inset, 0 0 ${20+(100/dist)}px #00ff4488 inset`;
+
+    updateRocks();
   }
 
   function animateSweep(){ sweepAngle=(sweepAngle+2)%360; radarSweep.style.transform=`rotate(${sweepAngle}deg)`; requestAnimationFrame(animateSweep); }
@@ -252,7 +256,5 @@ function initScanner(){
 
 setTimeout(initScanner,50);
 </script>
-</body>
-</html>
 </body>
 </html>
