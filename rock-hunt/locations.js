@@ -1,13 +1,9 @@
-// ===============================
-// PROSPECTING LOCATIONS CONFIG
-// ===============================
-
 const PROSPECTING_LOCATIONS = [
   {
     id: "test_zone",
-    name: "Test Zone (Your Home)",
-    lat: null,   // will be set dynamically by scanner to your current GPS
-    lng: null,
+    name: "Test Zone (Home)",
+    lat: -26.409830,   
+    lng: 152.926372,   
     radius: 30
   },
   {
