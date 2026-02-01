@@ -103,6 +103,39 @@ h1 {
   z-index:7;
 }
 
+/* QR Overlay */
+#qrOverlay {
+  position:absolute;
+  inset:0;
+  display:none;
+  background:rgba(0,0,0,0.8);
+  z-index:20;
+}
+#qrOverlay video {
+  width:100%;
+  height:100%;
+  object-fit:cover;
+}
+#qrReticle {
+  position:absolute;
+  width:200px;
+  height:200px;
+  top:50%;
+  left:50%;
+  transform:translate(-50%,-50%);
+  border:2px solid #00ff44;
+  box-shadow:0 0 20px #00ff44;
+}
+#qrText {
+  position:absolute;
+  bottom:20px;
+  width:100%;
+  text-align:center;
+  font-weight:bold;
+  color:#00ff44;
+  text-shadow:0 0 10px #00ff44;
+}
+
 #info {
   width:90%;
   max-width:360px;
@@ -165,6 +198,13 @@ select,button {
     <div id="radarSweep"></div>
     <div id="radarArc"></div>
     <div id="arrow"></div>
+
+    <!-- QR Scanner -->
+    <div id="qrOverlay">
+      <video id="qrVideo" playsinline></video>
+      <div id="qrReticle"></div>
+      <div id="qrText">PLACE ROCK CODE HERE</div>
+    </div>
   </div>
 </div>
 
@@ -179,148 +219,139 @@ select,button {
 <div id="proximityMeter"><div id="proximityFill"></div></div>
 
 <button id="scanRock">SCAN ROCK</button>
+<button id="toggleCam">TURN CAMERA OFF</button>
 
-<!-- External locations (optional, safe) -->
 <script src="locations.js"></script>
 
 <script>
-/* ========= SAFE LOCATION LOADER ========= */
+/* ===================== STATE ===================== */
+let LOCATIONS, targetIndex=0, currentLat=null, currentLon=null, heading=0;
+let rocks=[], scanning=false, videoStream=null;
 
-const FALLBACK_LOCATIONS = [
-  { name:"Test Zone Alpha", lat:-26.6415, lng:152.9112 },
-  { name:"Test Zone Bravo", lat:-26.6422, lng:152.9120 }
-];
+const MAX_VIS=25, RADAR_R=160;
 
-function getLocations() {
-  if (Array.isArray(window.PROSPECTING_LOCATIONS) && window.PROSPECTING_LOCATIONS.length) {
-    return window.PROSPECTING_LOCATIONS;
-  }
-  console.warn("Using fallback locations");
-  return FALLBACK_LOCATIONS;
+const scanner=document.getElementById("scanner-container");
+const arrow=document.getElementById("arrow");
+const sweep=document.getElementById("radarSweep");
+const select=document.getElementById("locationSelect");
+const fill=document.getElementById("proximityFill");
+
+const qrOverlay=document.getElementById("qrOverlay");
+const qrVideo=document.getElementById("qrVideo");
+
+/* ===================== LOCATIONS LOADER ===================== */
+function waitLocations(){
+  if(!Array.isArray(window.PROSPECTING_LOCATIONS))
+    return setTimeout(waitLocations,50);
+  LOCATIONS=window.PROSPECTING_LOCATIONS;
+  initLocations();
 }
-
-/* ========= CORE SYSTEM ========= */
-
-let LOCATIONS;
-let targetIndex = 0;
-let currentLat = null;
-let currentLon = null;
-let heading = 0;
-let rocks = [];
-
-const MAX_VIS = 25;
-const RADAR_R = 160;
-
-const scanner = document.getElementById("scanner-container");
-const arrow = document.getElementById("arrow");
-const sweep = document.getElementById("radarSweep");
-const select = document.getElementById("locationSelect");
-const fill = document.getElementById("proximityFill");
-
-function init() {
-  LOCATIONS = getLocations();
-  select.innerHTML = "";
-
+function initLocations(){
+  select.innerHTML="";
   LOCATIONS.forEach((l,i)=>{
-    const o = document.createElement("option");
-    o.value = i;
-    o.textContent = l.name;
+    const o=document.createElement("option");
+    o.value=i;o.textContent=l.name;
     select.appendChild(o);
   });
-
-  select.onchange = () => {
-    targetIndex = +select.value;
-    spawnRocks();
-  };
-
+  select.onchange=()=>{targetIndex=+select.value;spawnRocks();}
   spawnRocks();
-  startGPS();
-  animate();
 }
 
-function spawnRocks() {
+/* ===================== ROCKS ===================== */
+function spawnRocks(){
   rocks.forEach(r=>r.el.remove());
-  rocks = [];
-
-  const t = LOCATIONS[targetIndex];
-
+  rocks=[];
+  const t=LOCATIONS[targetIndex];
   for(let i=0;i<6;i++){
-    const el = document.createElement("div");
+    const el=document.createElement("div");
     el.className="rock";
     scanner.appendChild(el);
-
     rocks.push({
       el,
-      lat: t.lat + (Math.random()-0.5)*0.00004,
-      lng: t.lng + (Math.random()-0.5)*0.00004
+      lat:t.lat+(Math.random()-0.5)*0.00004,
+      lng:t.lng+(Math.random()-0.5)*0.00004,
+      a:Math.random()*360
     });
   }
 }
-
 function hav(a,b,c,d){
   const R=6371000;
   const dLat=(c-a)*Math.PI/180;
   const dLon=(d-b)*Math.PI/180;
   const x=Math.sin(dLat/2)**2 +
-    Math.cos(a*Math.PI/180)*Math.cos(c*Math.PI/180)*Math.sin(dLon/2)**2;
+          Math.cos(a*Math.PI/180)*Math.cos(c*Math.PI/180)*Math.sin(dLon/2)**2;
   return R*2*Math.atan2(Math.sqrt(x),Math.sqrt(1-x));
 }
-
 function updateRocks(){
   if(currentLat===null) return;
-
   rocks.forEach(r=>{
-    const d = hav(currentLat,currentLon,r.lat,r.lng);
+    const d=hav(currentLat,currentLon,r.lat,r.lng);
     if(d>MAX_VIS){ r.el.style.opacity=0; return; }
-
-    const scale = (MAX_VIS-d)/MAX_VIS;
-    const dx = (r.lng-currentLon)*90000;
-    const dy = (r.lat-currentLat)*111000;
-
-    const x = 180 + dx/MAX_VIS*RADAR_R;
-    const y = 180 - dy/MAX_VIS*RADAR_R;
-
+    const scale=(MAX_VIS-d)/MAX_VIS;
+    let dx=(r.lng-currentLon)*90000, dy=(r.lat-currentLat)*111000;
+    let x=180+dx/MAX_VIS*RADAR_R;
+    let y=180-dy/MAX_VIS*RADAR_R;
+    r.a+=0.3; x+=Math.cos(r.a)*3; y+=Math.sin(r.a)*3;
     r.el.style.transform=`translate(${x}px,${y}px)`;
-    r.el.style.width = r.el.style.height = (4+scale*10)+"px";
-    r.el.style.opacity = scale;
+    r.el.style.width=r.el.style.height=(4+scale*10)+"px";
+    r.el.style.opacity=scale;
   });
 }
 
+/* ===================== GPS ===================== */
+navigator.geolocation.watchPosition(p=>{
+  currentLat=p.coords.latitude;
+  currentLon=p.coords.longitude;
+  const t=LOCATIONS[targetIndex];
+  const d=hav(currentLat,currentLon,t.lat,t.lng);
+  document.getElementById("gps").textContent=`${currentLat.toFixed(6)}, ${currentLon.toFixed(6)}`;
+  document.getElementById("accuracy").textContent=`Accuracy ±${p.coords.accuracy.toFixed(1)}m`;
+  document.getElementById("distance").textContent=`Distance: ${d.toFixed(1)}m`;
+  document.getElementById("target").textContent=t.name;
+  fill.style.width=Math.max(0,Math.min(100,(1-d/40)*100))+"%";
+  if(d<6 && navigator.vibrate) navigator.vibrate([80,40,80]);
+},{enableHighAccuracy:true});
+
+/* ===================== COMPASS ===================== */
+window.addEventListener("deviceorientation",e=>{
+  if(e.alpha!=null){
+    heading=360-e.alpha;
+    arrow.style.transform=`translateX(-50%) rotate(${heading}deg)`;
+    document.getElementById("compass").textContent=`Compass: ${heading.toFixed(0)}°`;
+  }
+});
+
+/* ===================== QR SCANNER ===================== */
+const detector=("BarcodeDetector" in window)?new BarcodeDetector({formats:["qr_code"]}):null;
+async function startScan(){
+  if(!detector) return alert("QR not supported");
+  videoStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:"environment"}});
+  qrVideo.srcObject=videoStream; await qrVideo.play();
+  qrOverlay.style.display="block"; scanning=true; scanLoop();
+}
+function stopScan(){
+  scanning=false; qrOverlay.style.display="none";
+  if(videoStream) videoStream.getTracks().forEach(t=>t.stop());
+}
+async function scanLoop(){
+  if(!scanning) return;
+  const codes=await detector.detect(qrVideo);
+  if(codes.length){ alert("ROCK FOUND:\n"+codes[0].rawValue); stopScan(); }
+  requestAnimationFrame(scanLoop);
+}
+document.getElementById("scanRock").onclick=startScan;
+document.getElementById("toggleCam").onclick=stopScan;
+
+/* ===================== ANIMATION LOOP ===================== */
 function animate(){
   sweep.style.transform=`rotate(${Date.now()/25%360}deg)`;
   updateRocks();
   requestAnimationFrame(animate);
 }
 
-function startGPS(){
-  navigator.geolocation.watchPosition(p=>{
-    currentLat=p.coords.latitude;
-    currentLon=p.coords.longitude;
-
-    document.getElementById("gps").textContent =
-      `${currentLat.toFixed(6)}, ${currentLon.toFixed(6)}`;
-    document.getElementById("accuracy").textContent =
-      `Accuracy ±${p.coords.accuracy.toFixed(1)}m`;
-
-    const t = LOCATIONS[targetIndex];
-    const d = hav(currentLat,currentLon,t.lat,t.lng);
-    document.getElementById("distance").textContent = `Distance: ${d.toFixed(1)}m`;
-    document.getElementById("target").textContent = `Target: ${t.name}`;
-
-    fill.style.width = Math.max(0,Math.min(100,(1-d/40)*100))+"%";
-    if(d<6 && navigator.vibrate) navigator.vibrate([80,40,80]);
-  },console.error,{enableHighAccuracy:true});
-}
-
-window.addEventListener("deviceorientation",e=>{
-  if(e.alpha!=null){
-    heading = 360-e.alpha;
-    arrow.style.transform = `translateX(-50%) rotate(${heading}deg)`;
-    document.getElementById("compass").textContent = `Compass: ${heading.toFixed(0)}°`;
-  }
-});
-
-init();
+waitLocations();
+animate();
 </script>
+
 </body>
 </html>
