@@ -180,22 +180,24 @@ select,button {
 
 <button id="scanRock">SCAN ROCK</button>
 
+<script src="locations.js"></script>
+
 <script>
-// ====== Locations with rarities ======
-window.PROSPECTING_LOCATIONS = [
+/* ========= SAFE LOCATION LOADER ========= */
+const FALLBACK_LOCATIONS = [
   { name:"Test Zone Alpha", lat:-26.6415, lng:152.9112, rarities:["common","common","rare","common","epic","common"] },
-  { name:"Test Zone Bravo", lat:-26.6422, lng:152.9120, rarities:["common","rare","common","common","common","epic"] },
-  { name:"Rocky Ridge", lat:-26.6430, lng:152.9135, rarities:["common","common","common","rare","common","epic"] },
-  { name:"Hidden Creek", lat:-26.6400, lng:152.9100, rarities:["common","common","common","common","rare","common"] },
-  { name:"Sunset Valley", lat:-26.6445, lng:152.9145, rarities:["common","rare","common","common","epic","common"] },
-  { name:"Cooroy Mountain Base", lat:-26.6450, lng:152.9150, rarities:["rare","common","common","epic","common","common"] },
-  { name:"Golden Boulder", lat:-26.6462, lng:152.9160, rarities:["common","epic","common","common","rare","common"] },
-  { name:"Whispering Pines", lat:-26.6470, lng:152.9175, rarities:["common","common","rare","common","common","epic"] },
-  { name:"Crystal Cavern", lat:-26.6485, lng:152.9180, rarities:["epic","common","common","rare","common","common"] },
-  { name:"Emerald Plateau", lat:-26.6495, lng:152.9195, rarities:["common","rare","epic","common","common","common"] }
+  { name:"Test Zone Bravo", lat:-26.6422, lng:152.9120, rarities:["common","rare","common","common","common","epic"] }
 ];
 
-// ====== Core system ======
+function getLocations() {
+  if (Array.isArray(window.PROSPECTING_LOCATIONS) && window.PROSPECTING_LOCATIONS.length) {
+    return window.PROSPECTING_LOCATIONS;
+  }
+  console.warn("Using fallback locations");
+  return FALLBACK_LOCATIONS;
+}
+
+/* ========= CORE SYSTEM ========= */
 let LOCATIONS, targetIndex=0, currentLat=null, currentLon=null, heading=0, rocks=[];
 
 const MAX_VIS=25, RADAR_R=160;
@@ -205,7 +207,7 @@ const sweep=document.getElementById("radarSweep");
 const select=document.getElementById("locationSelect");
 const fill=document.getElementById("proximityFill");
 
-// Get rock color by rarity
+// Map rarity to color
 function getRockColor(rarity){
   switch(rarity){
     case "common": return "#ffcc00";
@@ -215,23 +217,7 @@ function getRockColor(rarity){
   }
 }
 
-// Initialize
-function init(){
-  LOCATIONS = window.PROSPECTING_LOCATIONS || [];
-  select.innerHTML = "";
-  LOCATIONS.forEach((l,i)=>{
-    const o = document.createElement("option");
-    o.value=i;
-    o.textContent=l.name;
-    select.appendChild(o);
-  });
-  select.onchange = ()=>{ targetIndex=+select.value; spawnRocks(); };
-  spawnRocks();
-  startGPS();
-  animate();
-}
-
-// Spawn rocks with rarity colors
+// Spawn rocks with rarity
 function spawnRocks(){
   rocks.forEach(r=>r.el.remove());
   rocks=[];
@@ -240,15 +226,15 @@ function spawnRocks(){
     const el=document.createElement("div");
     el.className="rock";
     scanner.appendChild(el);
-    const rarity = t.rarities[i % t.rarities.length];
+    const rarity = (t.rarities && t.rarities[i]) || "common";
     const color = getRockColor(rarity);
     el.style.background=color;
     el.style.boxShadow=`0 0 6px ${color},0 0 12px ${color}55`;
-    rocks.push({ el, lat: t.lat + (Math.random()-0.5)*0.00004, lng: t.lng + (Math.random()-0.5)*0.00004, rarity });
+    rocks.push({el, lat:t.lat+(Math.random()-0.5)*0.00004, lng:t.lng+(Math.random()-0.5)*0.00004, rarity});
   }
 }
 
-// Haversine distance
+// Distance calculation
 function hav(a,b,c,d){
   const R=6371000;
   const dLat=(c-a)*Math.PI/180;
@@ -257,7 +243,7 @@ function hav(a,b,c,d){
   return R*2*Math.atan2(Math.sqrt(x),Math.sqrt(1-x));
 }
 
-// Update rock positions
+// Update rocks positions
 function updateRocks(){
   if(currentLat===null) return;
   rocks.forEach(r=>{
@@ -274,15 +260,19 @@ function updateRocks(){
   });
 }
 
-// Animate radar sweep
+// Animate radar
 function animate(){
   sweep.style.transform=`rotate(${Date.now()/25%360}deg)`;
   updateRocks();
   requestAnimationFrame(animate);
 }
 
-// GPS updates
+// Initialize GPS with error handling
 function startGPS(){
+  if(!navigator.geolocation){
+    document.getElementById("gps").textContent="GPS not supported!";
+    return;
+  }
   navigator.geolocation.watchPosition(p=>{
     currentLat=p.coords.latitude;
     currentLon=p.coords.longitude;
@@ -292,12 +282,16 @@ function startGPS(){
     const d=hav(currentLat,currentLon,t.lat,t.lng);
     document.getElementById("distance").textContent=`Distance: ${d.toFixed(1)}m`;
     document.getElementById("target").textContent=`Target: ${t.name}`;
-    fill.style.width = Math.max(0,Math.min(100,(1-d/40)*100))+"%";
+    fill.style.width=Math.max(0,Math.min(100,(1-d/40)*100))+"%";
     if(d<6 && navigator.vibrate) navigator.vibrate([80,40,80]);
-  },console.error,{enableHighAccuracy:true});
+  }, err=>{
+    console.error(err);
+    document.getElementById("gps").textContent="GPS error: "+err.message;
+    document.getElementById("accuracy").textContent="—";
+  }, { enableHighAccuracy:true, timeout:10000, maximumAge:0 });
 }
 
-// Device compass
+// Device orientation
 window.addEventListener("deviceorientation",e=>{
   if(e.alpha!=null){
     heading=360-e.alpha;
@@ -306,7 +300,24 @@ window.addEventListener("deviceorientation",e=>{
   }
 });
 
-init();
+// Initialize scanner after ensuring locations loaded
+function initScanner(){
+  LOCATIONS=getLocations();
+  select.innerHTML="";
+  LOCATIONS.forEach((l,i)=>{
+    const o=document.createElement("option");
+    o.value=i;
+    o.textContent=l.name;
+    select.appendChild(o);
+  });
+  select.onchange=()=>{ targetIndex=+select.value; spawnRocks(); };
+  spawnRocks();
+  startGPS();
+  animate();
+}
+
+// Wait a tick to ensure locations.js is loaded
+window.addEventListener("load",()=>setTimeout(initScanner,50));
 </script>
 </body>
 </html>
