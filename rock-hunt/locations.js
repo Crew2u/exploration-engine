@@ -1,16 +1,20 @@
-const PROSPECTING_LOCATIONS = [
+window.LOCATIONS = [
   {
-    id: "test_zone",
-    name: "Test Zone (Home)",
-    lat: -26.409830,   
-    lng: 152.926372,   
-    radius: 30
+    id: "home",
+    name: "Home Base",
+    lat: -26.123456,
+    lon: 152.654321
   },
   {
-    id: "quartz_ridge",
+    id: "quartz",
     name: "Quartz Ridge",
-    lat: -26.3605,
-    lng: 152.8417,
-    radius: 50
+    lat: -26.223456,
+    lon: 152.754321
+  },
+  {
+    id: "test",
+    name: "Test Zone",
+    lat: -26.323456,
+    lon: 152.854321
   }
 ];
