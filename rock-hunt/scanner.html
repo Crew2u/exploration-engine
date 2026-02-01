@@ -138,17 +138,17 @@ function initScanner(){
       rock.dataset.rockId=['G','S','C','M'][Math.floor(Math.random()*4)]+Math.floor(Math.random()*1000);
       rock.style.background=['#ffcc00','#cccccc','#44ccff','#ff44ff'][Math.floor(Math.random()*4)];
       rock.style.width='20px'; rock.style.height='20px';
-      rock.dataset.angle=Math.random()*2*Math.PI;  // unique angle for motion
-      rock.dataset.radius=Math.random()*50+10;     // unique radius
+      rock.dataset.angle=Math.random()*2*Math.PI;  
+      rock.dataset.radius=Math.random()*50+10;     
       scannerDiv.appendChild(rock); rocks.push(rock);
     }
   }
 
   function updateRocks(distToTarget){
+    const target=getTarget();
     rocks.forEach(rock=>{
       if(distToTarget>5){ rock.style.display='none'; return;}
       rock.style.display='block';
-      // move towards center as user approaches
       const baseRadius=parseFloat(rock.dataset.radius);
       const radius=Math.max(2, baseRadius*(distToTarget/5)); 
       const angle=parseFloat(rock.dataset.angle);
@@ -160,7 +160,7 @@ function initScanner(){
   }
 
   function update(){
-    const target=getTarget();
+    const target=getTarget();  
     if(currentLat===null||currentLon===null||compassHeading===null) return;
     const dist=haversine(currentLat,currentLon,target.lat,target.lng);
     const bear=bearing(currentLat,currentLon,target.lat,target.lng);
@@ -252,5 +252,7 @@ function initScanner(){
 
 setTimeout(initScanner,50);
 </script>
+</body>
+</html>
 </body>
 </html>
