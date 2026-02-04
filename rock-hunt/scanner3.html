@@ -19,10 +19,11 @@ h1 {
   background:#001100; transition: box-shadow 0.2s ease, border-color 0.2s ease;
 }
 
-#scanner-container { 
+#scanner-container, #nav-container { 
   width:360px; height:360px; border-radius:50%; position:relative; overflow:hidden;
   background:radial-gradient(circle at center, #001100 0%, #002200 80%);
   box-shadow: inset 0 0 30px #00ff0044, 0 0 40px #00ff0088; border:3px solid #00ff00;
+  display:flex; align-items:center; justify-content:center;
 }
 
 #radarSweep { 
@@ -90,11 +91,13 @@ button, select { margin:10px 0; padding:12px 22px; font-size:1em; border-radius:
 #scanRock { background:#ff4444; color:#fff; font-weight:bold; width:90%; max-width:360px; box-shadow:0 0 8px #ff4444; }
 #proximityMeter { width:90%; max-width:360px; height:20px; background:#004422; border:1px solid #00ff44; border-radius:10px; overflow:hidden; margin-top:6px; }
 #proximityFill { width:0%; height:100%; background:#ff4444; transition:width 0.2s ease; }
+#toggleView { background:#00aaff; color:#fff; font-weight:bold; width:90%; max-width:360px; box-shadow:0 0 8px #00aaff; margin-top:6px; }
 </style>
 </head>
 <body>
 <h1>Futuristic Prospecting Scanner</h1>
 <select id="locationSelect"><option>Loading locations...</option></select>
+
 <div id="deviceFrame">
   <div id="scanner-container">
     <video id="qrVideo" autoplay playsinline></video>
@@ -105,6 +108,10 @@ button, select { margin:10px 0; padding:12px 22px; font-size:1em; border-radius:
     <div id="arrow"></div>
     <div id="qrOverlay"></div>
     <div id="qrPanel"><iframe></iframe></div>
+  </div>
+  <div id="nav-container" style="display:none;">
+    <div style="color:#0f0;">🚗 Navigation Mode (over 100m)</div>
+    <div id="navInfo" style="text-align:center;"></div>
   </div>
 </div>
 
@@ -123,6 +130,7 @@ button, select { margin:10px 0; padding:12px 22px; font-size:1em; border-radius:
 <button id="start">Activate Scanner</button>
 <button id="scanRock">Start QR Scanner</button>
 <button id="toggleCamera">Toggle Camera</button>
+<button id="toggleView">Toggle Radar / Navigation</button>
 
 <script src="locations.js?v=12"></script>
 <script src="https://unpkg.com/jsqr/dist/jsQR.js"></script>
@@ -131,14 +139,17 @@ function initScanner(){
   if(!Array.isArray(PROSPECTING_LOCATIONS)||PROSPECTING_LOCATIONS.length===0){ alert("No PROSPECTING_LOCATIONS!"); return;}
   
   let TARGET_INDEX=0, currentLat=null, currentLon=null, compassHeading=null, smoothAngle=0, sweepAngle=0;
-  let rocks=[], cameraStream=null, qrActive=false, scannerActive=false;
+  let rocks=[], cameraStream=null, qrActive=false, scannerActive=false, usingNav=false;
 
   const arrow=document.getElementById("arrow");
   const select=document.getElementById("locationSelect");
   const proximityFill=document.getElementById("proximityFill");
   const scanRockBtn=document.getElementById("scanRock");
   const toggleCamBtn=document.getElementById("toggleCamera");
+  const toggleViewBtn=document.getElementById("toggleView");
   const scannerDiv=document.getElementById("scanner-container");
+  const navDiv=document.getElementById("nav-container");
+  const navInfo=document.getElementById("navInfo");
   const radarSweep=document.getElementById("radarSweep");
   const radarRings=document.getElementById("radarRings");
   const qrVideo=document.getElementById("qrVideo");
@@ -154,9 +165,12 @@ function initScanner(){
   function haversine(lat1,lon1,lat2,lon2){const R=6371000,dLat=toRad(lat2-lat1),dLon=toRad(lon2-lon1);const a=Math.sin(dLat/2)**2+Math.cos(toRad(lat1))*Math.cos(toRad(lat2))*Math.sin(dLon/2)**2; return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));}
   function bearing(lat1,lon1,lat2,lon2){const y=Math.sin(toRad(lon2-lon1))*Math.cos(toRad(lat2)), x=Math.cos(toRad(lat1))*Math.sin(toRad(lat2))-Math.sin(toRad(lat1))*Math.cos(toRad(lat2))*Math.cos(toRad(lon2-lon1)); return toDeg(Math.atan2(y,x));}
 
-  select.innerHTML=""; PROSPECTING_LOCATIONS.forEach((loc,i)=>{ const opt=document.createElement('option'); opt.value=i; opt.textContent=loc.name; select.appendChild(opt);});
+  // Populate locations
+  select.innerHTML=""; PROSPECTING_LOCATIONS.forEach((loc,i)=>{
+    const opt=document.createElement('option'); opt.value=i; opt.textContent=loc.name; select.appendChild(opt);
+  });
   select.value=0;
-  select.addEventListener('change',()=>{ TARGET_INDEX=parseInt(select.value); spawnRocks(); update(); });
+  select.addEventListener('change',()=>{ TARGET_INDEX=parseInt(select.value); update(); });
 
   function spawnRocks(){
     rocks.forEach(r=>r.remove()); rocks.length=0;
@@ -189,7 +203,6 @@ function initScanner(){
       rock.style.transform=`translate(${rock.dataset.x}px,${rock.dataset.y}px) scale(${scale})`;
       rock.style.opacity=0.3+0.7*(1-normalized);
 
-      // Only intermittent vibration when very close
       if(distToTarget<5 && navigator.vibrate && Math.random()<0.05) navigator.vibrate(120);
     });
   }
@@ -203,6 +216,9 @@ function initScanner(){
     smoothAngle+=(relative-smoothAngle)*0.12;
     arrow.style.transform=`translateX(-50%) rotate(${smoothAngle}deg)`;
 
+    // Info
+    document.getElementById("gps").textContent=`You: ${currentLat.toFixed(6)}, ${currentLon.toFixed(6)}`;
+    document.getElementById("accuracy").textContent=`Accuracy: ±${currentLat ? '...' : '—'} m`;
     document.getElementById("target").textContent=`Target: ${target.name} (${target.lat.toFixed(6)}, ${target.lng.toFixed(6)})`;
     document.getElementById("distance").textContent=dist<1000?`Distance: ${dist.toFixed(1)} m`:`Distance: ${(dist/1000).toFixed(3)} km`;
     document.getElementById("bearing").textContent=`Bearing: ${bear.toFixed(1)}°`;
@@ -222,6 +238,11 @@ function initScanner(){
     radarArc.style.boxShadow=`0 0 ${10+(50/dist)}px ${colorShift} inset, 0 0 ${20+(100/dist)}px ${colorShift}88 inset`;
 
     updateRocks(dist);
+
+    // Navigation auto-switch
+    if(dist>100 && !usingNav){ scannerDiv.style.display='none'; navDiv.style.display='flex'; usingNav=true; navInfo.textContent=`Heading ${bear.toFixed(0)}°, Distance ${(dist/1000).toFixed(3)} km`; }
+    else if(dist<=100 && usingNav){ scannerDiv.style.display='flex'; navDiv.style.display='none'; usingNav=false; }
+    if(usingNav) navInfo.textContent=`Heading ${bear.toFixed(0)}°, Distance ${(dist/1000).toFixed(3)} km`;
   }
 
   function animateSweep(){ 
@@ -242,15 +263,12 @@ function initScanner(){
     if(!navigator.geolocation){alert("Geolocation unsupported");return;}
     gpsWatcher=navigator.geolocation.watchPosition(pos=>{
       currentLat=pos.coords.latitude; currentLon=pos.coords.longitude;
-      document.getElementById("gps").textContent=`You: ${currentLat.toFixed(6)}, ${currentLon.toFixed(6)}`;
-      document.getElementById("accuracy").textContent=`Accuracy: ±${pos.coords.accuracy.toFixed(1)} m`;
       update();
     },err=>alert("GPS error:"+err.message),{enableHighAccuracy:true,maximumAge:0,timeout:10000});
   }
 
   async function startScanner(){
     if(scannerActive){
-      // Stop scanner
       scannerActive=false;
       startBtn.textContent="Activate Scanner";
       if(gpsWatcher) navigator.geolocation.clearWatch(gpsWatcher);
@@ -289,5 +307,27 @@ function initScanner(){
           ctx.drawImage(qrVideo,0,0,canvas.width,canvas.height);
           const imageData=ctx.getImageData(0,0,canvas.width,canvas.height);
           const code=jsQR(imageData.data,canvas.width,canvas.height);
-          if(code && code.data){
-            qrVideo.srcObject.getTracks().forEach(t
+          if(code && code.data){ qrIframe.src=code.data; qrPanel.style.display='block'; }
+        }
+        requestAnimationFrame(scanFrame);
+      }
+      scanFrame();
+    } catch(e){ alert("Camera error: "+e.message); qrActive=false; qrVideo.style.display='none'; }
+  }
+
+  scanRockBtn.onclick=startQRScanner;
+  toggleCamBtn.onclick=async()=>{
+    if(cameraStream){ cameraStream.getTracks().forEach(t=>t.stop()); cameraStream=null; qrVideo.style.display='none'; qrActive=false; }
+    else if(scannerActive) startQRScanner();
+  };
+  toggleViewBtn.onclick=()=>{ usingNav=!usingNav; scannerDiv.style.display=usingNav?'none':'flex'; navDiv.style.display=usingNav?'flex':'none'; };
+
+  startBtn.onclick=startScanner;
+
+  spawnRocks(); createRings(); update();
+}
+
+initScanner();
+</script>
+</body>
+</html>
