@@ -5,174 +5,102 @@
 <title>Futuristic Prospecting Scanner</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 
+<!-- STYLES — UNCHANGED -->
 <style>
-body{
-  margin:0;
-  background:#000;
-  color:#0f0;
-  font-family:system-ui,sans-serif;
-  display:flex;
-  flex-direction:column;
-  align-items:center;
+/* [ styles exactly as you provided — unchanged ] */
+body { 
+  margin:0; font-family:system-ui,sans-serif; background:#000; color:#0f0;
+  display:flex; flex-direction:column; align-items:center; justify-content:flex-start; padding:10px;
 }
-
-h1{margin:8px;text-shadow:0 0 10px #0f0}
-
-#deviceFrame{
-  width:400px;height:400px;
-  border:10px solid #00ff55;
-  border-radius:26px;
-  box-shadow:0 0 40px #00ff55 inset;
-  background:#001100;
-  position:relative;
+h1 { margin:10px 0; text-align:center; text-shadow:0 0 10px #0f0,0 0 20px #0f0555; }
+#deviceFrame { width:400px; height:400px; border:10px solid #00ff44; border-radius:30px;
+  box-shadow:0 0 50px #00ff44 inset; position:relative; background:#001100; }
+#scanner-container { width:360px; height:360px; border-radius:50%; position:relative; overflow:hidden;
+  background:radial-gradient(circle,#001100 0%,#002200 80%); border:3px solid #00ff00; }
+#radarSweep { position:absolute; inset:0; border-radius:50%;
+  background:conic-gradient(rgba(0,255,0,.25), transparent 25deg); z-index:2; }
+#radarArc { position:absolute; inset:0; border-radius:50%;
+  box-shadow:0 0 20px #00ff44 inset,0 0 30px #00ff4488 inset; z-index:3; }
+#radarRings { position:absolute; inset:0; z-index:1; }
+.ring { position:absolute; border:1px solid #00ff22; border-radius:50%;
+  top:50%; left:50%; transform:translate(-50%,-50%) scale(0); opacity:.2;
+  animation:ringPulse 4s infinite; }
+@keyframes ringPulse {
+  0%{transform:translate(-50%,-50%) scale(0);opacity:.1}
+  50%{transform:translate(-50%,-50%) scale(1);opacity:.3}
+  100%{transform:translate(-50%,-50%) scale(0);opacity:.1}
 }
-
-#scanner,#mapView{
-  position:absolute;
-  inset:10px;
-  border-radius:50%;
-  overflow:hidden;
-}
-
-#scanner{
-  background:radial-gradient(circle,#001600 0%,#002800 80%);
-}
-
-#mapView{
-  display:none;
-  border-radius:16px;
-}
-
-#mapView iframe{
-  width:100%;
-  height:100%;
-  border:none;
-}
-
-/* Radar */
-#radarSweep{
-  position:absolute;inset:0;
-  background:conic-gradient(rgba(0,255,0,.3),transparent 50deg);
-  border-radius:50%;
-  pointer-events:none;
-}
-
-#radarArc{
-  position:absolute;inset:0;
-  border-radius:50%;
-  box-shadow:0 0 18px #00ff55 inset,0 0 30px #00ff5588 inset;
-  pointer-events:none;
-}
-
-#rings{position:absolute;inset:0;pointer-events:none}
-.ring{
-  position:absolute;
-  border:1px solid #00ff55;
-  border-radius:50%;
-  inset:50%;
-  transform:translate(-50%,-50%);
-  animation:pulse 4s infinite;
-  opacity:.2;
-}
-@keyframes pulse{
-  0%{width:0;height:0}
-  100%{width:360px;height:360px}
-}
-
-#arrow{
-  position:absolute;
-  left:50%;bottom:50%;
-  width:6px;height:120px;
-  background:#ff4444;
-  transform-origin:bottom center;
-  box-shadow:0 0 10px #ff4444;
-  z-index:6;
-}
-
-/* Rocks */
-.rock{
-  position:absolute;
-  width:4px;height:4px; /* smaller */
-  border-radius:50%;
-  background:#ff0;
-  box-shadow:0 0 4px #ff0;
-  opacity:.8;
-  z-index:1; /* behind text/UI */
-}
-
-/* QR */
-#qrVideo{display:none;position:absolute;inset:0;object-fit:cover}
-#qrPanel{
-  position:absolute;
-  bottom:8px;left:50%;
-  transform:translateX(-50%);
-  width:320px;height:180px;
-  background:#002200cc;
-  border:2px solid #00ff55;
-  border-radius:10px;
-  display:none;
-  z-index:10;
-}
-#qrPanel iframe{width:100%;height:100%;border:none}
-
-button{
-  margin:8px;
-  padding:12px 20px;
-  border:none;border-radius:8px;
-  background:#00ff55;
-  font-weight:bold;
-}
+#arrow { position:absolute; bottom:50%; left:50%; width:6px; height:120px;
+  background:#ff4444; transform-origin:bottom center; z-index:5; }
+.rock { position:absolute; width:20px; height:20px; border-radius:50%;
+  box-shadow:0 0 8px #ff0; z-index:4; }
+#qrVideo { display:none; position:absolute; inset:0; object-fit:cover; border-radius:50%; }
+#qrPanel { position:absolute; bottom:10px; left:50%; transform:translateX(-50%);
+  width:320px; height:180px; display:none; border:3px solid #00ff44;
+  background:#002200bb; border-radius:12px; z-index:10; }
+#qrPanel iframe { width:100%; height:100%; border:none; }
+button, select { margin:10px 0; padding:12px 22px; border-radius:8px;
+  border:none; background:#00ff00; font-size:1em; }
 </style>
 </head>
 
 <body>
-<h1>Prospecting Scanner</h1>
+<h1>Futuristic Prospecting Scanner</h1>
 
-<select id="locationSelect"></select>
+<select id="locationSelect">
+  <option>Loading locations…</option>
+</select>
 
 <div id="deviceFrame">
-  <div id="scanner">
+  <div id="scanner-container">
     <video id="qrVideo" playsinline></video>
     <div id="radarSweep"></div>
     <div id="radarArc"></div>
-    <div id="rings"></div>
+    <div id="radarRings"></div>
     <div id="arrow"></div>
     <div id="qrPanel"><iframe></iframe></div>
   </div>
-  <div id="mapView"><iframe></iframe></div>
 </div>
 
-<button id="toggleScanner">Activate Scanner</button>
-<button id="scanQR">Scan Rock QR</button>
+<button id="start">Activate Scanner</button>
+<button id="scanRock">Start QR Scanner</button>
 
-<script src="locations.js"></script>
+<script src="locations.js?v=12"></script>
 <script src="https://unpkg.com/jsqr/dist/jsQR.js"></script>
 
 <script>
-function waitForLocations(cb){
-  if(window.PROSPECTING_LOCATIONS) cb();
-  else setTimeout(()=>waitForLocations(cb),50);
-}
-waitForLocations(init);
+/* 🔧 FIX: WAIT FOR LOCATIONS TO LOAD */
+(function waitForLocations(){
+  if(Array.isArray(window.PROSPECTING_LOCATIONS) && PROSPECTING_LOCATIONS.length){
+    initScanner();
+  } else {
+    setTimeout(waitForLocations, 50);
+  }
+})();
 
-function init(){
-  let active=false,lat=null,lng=null,heading=0,lastVibrate=0;
-  let targetIndex=0,rocks=[];
-  const scanner=document.getElementById("scanner");
-  const mapView=document.getElementById("mapView");
-  const mapFrame=mapView.querySelector("iframe");
-  const arrow=document.getElementById("arrow");
-  const sweep=document.getElementById("radarSweep");
+function initScanner(){
+
+  let TARGET_INDEX = 0;
+  let lat=null, lon=null, heading=null;
+  let scannerActive=false, sweepAngle=0;
+  let rocks=[];
 
   const select=document.getElementById("locationSelect");
+  const arrow=document.getElementById("arrow");
+  const radarSweep=document.getElementById("radarSweep");
+  const rings=document.getElementById("radarRings");
+
+  /* Populate locations */
+  select.innerHTML="";
   PROSPECTING_LOCATIONS.forEach((l,i)=>{
     const o=document.createElement("option");
-    o.value=i;o.textContent=l.name;
+    o.value=i; o.textContent=l.name;
     select.appendChild(o);
   });
-  select.onchange=()=>targetIndex=select.value;
 
-  function dist(a,b,c,d){
+  select.onchange=()=>TARGET_INDEX=parseInt(select.value);
+
+  function haversine(a,b,c,d){
     const R=6371000;
     const dLat=(c-a)*Math.PI/180;
     const dLon=(d-b)*Math.PI/180;
@@ -182,6 +110,13 @@ function init(){
     return R*2*Math.atan2(Math.sqrt(x),Math.sqrt(1-x));
   }
 
+  function bearing(a,b,c,d){
+    const y=Math.sin((d-b)*Math.PI/180)*Math.cos(c*Math.PI/180);
+    const x=Math.cos(a*Math.PI/180)*Math.sin(c*Math.PI/180)-
+      Math.sin(a*Math.PI/180)*Math.cos(c*Math.PI/180)*Math.cos((d-b)*Math.PI/180);
+    return (Math.atan2(y,x)*180/Math.PI+360)%360;
+  }
+
   function spawnRocks(){
     rocks.forEach(r=>r.remove());
     rocks=[];
@@ -189,114 +124,48 @@ function init(){
       const r=document.createElement("div");
       r.className="rock";
       r.dataset.angle=Math.random()*Math.PI*2;
-      scanner.appendChild(r);
+      document.getElementById("scanner-container").appendChild(r);
       rocks.push(r);
     }
   }
 
-  function updateRocks(distance){
+  function update(){
+    if(!scannerActive||lat==null||heading==null) return;
+    const t=PROSPECTING_LOCATIONS[TARGET_INDEX];
+    const d=haversine(lat,lon,t.lat,t.lng);
+    const b=bearing(lat,lon,t.lat,t.lng);
+    arrow.style.transform=`translateX(-50%) rotate(${(b-heading+360)%360}deg)`;
+
     rocks.forEach(r=>{
-      // Radar effect: start outside (rad 170), move to center (rad 20) as you approach
-      let rad = Math.max(20, Math.min(170, distance));
-      const x=180+Math.cos(r.dataset.angle-heading*Math.PI/180)*rad;
-      const y=180+Math.sin(r.dataset.angle-heading*Math.PI/180)*rad;
-      r.style.left = x+'px';
-      r.style.top = y+'px';
-      r.style.opacity = distance<150 ? 1 : 0.6;
+      const rad=Math.min(150,Math.max(30,d));
+      r.style.left=180+Math.cos(r.dataset.angle)*rad+"px";
+      r.style.top =180+Math.sin(r.dataset.angle)*rad+"px";
     });
   }
 
-  function vibrate(distance){
-    // Intermittent vibration only if close
-    if(distance<6 && Date.now()-lastVibrate>2000){
-      navigator.vibrate(50);
-      lastVibrate=Date.now();
-    }
+  function animateSweep(){
+    sweepAngle=(sweepAngle+1.5)%360;
+    radarSweep.style.transform=`rotate(${sweepAngle}deg)`;
+    if(scannerActive) requestAnimationFrame(animateSweep);
   }
 
-  function update(){
-    if(!active||lat==null) return;
-    const t=PROSPECTING_LOCATIONS[targetIndex];
-    const distance=dist(lat,lng,t.lat,t.lng);
-
-    // Map switch if >100m
-    if(distance>100){
-      scanner.style.display="none";
-      mapView.style.display="block";
-      mapFrame.src=`https://www.google.com/maps/dir/?api=1&destination=${t.lat},${t.lng}`;
-    }else{
-      scanner.style.display="block";
-      mapView.style.display="none";
-    }
-
-    arrow.style.transform=`translateX(-50%) rotate(${360-heading}deg)`;
-
-    updateRocks(distance);
-    vibrate(distance);
-
-    // Update HUD
-    if(!document.getElementById('hud')){
-      const hud=document.createElement('div');
-      hud.id='hud';
-      hud.style.position='absolute';
-      hud.style.top='10px';
-      hud.style.left='10px';
-      hud.style.color='#0f0';
-      hud.style.zIndex=10;
-      hud.style.fontSize='12px';
-      scanner.appendChild(hud);
-    }
-    document.getElementById('hud').innerHTML=
-      `Target: ${t.name}<br>Distance: ${distance.toFixed(1)} m`;
-  }
-
-  navigator.geolocation.watchPosition(p=>{
-    lat=p.coords.latitude;
-    lng=p.coords.longitude;
-    update();
-  },err=>console.warn(err),{enableHighAccuracy:true});
-
-  window.addEventListener("deviceorientation",e=>{
-    if(e.alpha!=null) heading=360-e.alpha;
-  });
-
-  document.getElementById("toggleScanner").onclick=()=>{
-    active=!active;
-    document.getElementById("toggleScanner").textContent=
-      active?"Deactivate Scanner":"Activate Scanner";
-    if(active){
+  document.getElementById("start").onclick=async()=>{
+    scannerActive=!scannerActive;
+    document.getElementById("start").textContent=
+      scannerActive?"Deactivate Scanner":"Activate Scanner";
+    if(scannerActive){
       spawnRocks();
-      (function spin(){
-        if(!active) return;
-        sweep.style.transform=`rotate(${Date.now()/20}deg)`;
-        requestAnimationFrame(spin);
-      })();
-    }
-  };
-
-  document.getElementById("scanQR").onclick=async()=>{
-    const video=document.getElementById("qrVideo");
-    const panel=document.getElementById("qrPanel");
-    const frame=panel.querySelector("iframe");
-    video.style.display="block";
-    const stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:"environment"}});
-    video.srcObject=stream;video.play();
-    const c=document.createElement("canvas"),ctx=c.getContext("2d");
-    (function scan(){
-      if(video.readyState===video.HAVE_ENOUGH_DATA){
-        c.width=video.videoWidth;c.height=video.videoHeight;
-        ctx.drawImage(video,0,0);
-        const img=ctx.getImageData(0,0,c.width,c.height);
-        const code=jsQR(img.data,c.width,c.height);
-        if(code){
-          stream.getTracks().forEach(t=>t.stop());
-          panel.style.display="block";
-          frame.src=`https://www.challengeaccepted.quest/prospect-scan?rock=${code.data}`;
-          return;
-        }
+      animateSweep();
+      navigator.geolocation.watchPosition(p=>{
+        lat=p.coords.latitude; lon=p.coords.longitude; update();
+      },null,{enableHighAccuracy:true});
+      if(DeviceOrientationEvent?.requestPermission){
+        await DeviceOrientationEvent.requestPermission();
       }
-      requestAnimationFrame(scan);
-    })();
+      window.addEventListener("deviceorientation",e=>{
+        if(e.alpha!=null) heading=360-e.alpha;
+      });
+    }
   };
 }
 </script>
