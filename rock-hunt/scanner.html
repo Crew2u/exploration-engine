@@ -6,344 +6,296 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 
 <style>
-body {
+body{
   margin:0;
-  font-family:system-ui,sans-serif;
   background:#000;
   color:#0f0;
+  font-family:system-ui,sans-serif;
   display:flex;
   flex-direction:column;
   align-items:center;
-  padding:10px;
-}
-h1 {
-  margin:10px 0;
-  text-align:center;
-  text-shadow:0 0 10px #0f0,0 0 20px #0f0555;
 }
 
-#deviceFrame {
-  width:400px;
-  height:400px;
-  border:10px solid #00ff44;
-  border-radius:30px;
-  box-shadow:0 0 50px #00ff44 inset;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  position:relative;
+h1{margin:8px;text-shadow:0 0 10px #0f0}
+
+#deviceFrame{
+  width:400px;height:400px;
+  border:10px solid #00ff55;
+  border-radius:26px;
+  box-shadow:0 0 40px #00ff55 inset;
   background:#001100;
-}
-
-#scanner-container {
-  width:360px;
-  height:360px;
-  border-radius:50%;
   position:relative;
+}
+
+#scanner,#mapView{
+  position:absolute;
+  inset:10px;
+  border-radius:50%;
   overflow:hidden;
-  background:radial-gradient(circle,#001100 0%,#002200 80%);
-  box-shadow: inset 0 0 30px #00ff0044,0 0 40px #00ff0088;
-  border:3px solid #00ff00;
 }
 
-#overlayPulse {
-  position:absolute;
-  inset:0;
+#scanner{
+  background:radial-gradient(circle,#001600 0%,#002800 80%);
+}
+
+#mapView{
+  display:none;
+  border-radius:16px;
+}
+
+#mapView iframe{
+  width:100%;
+  height:100%;
+  border:none;
+}
+
+/* Radar */
+#radarSweep{
+  position:absolute;inset:0;
+  background:conic-gradient(rgba(0,255,0,.3),transparent 50deg);
   border-radius:50%;
-  box-shadow:0 0 40px #00ff44 inset,0 0 60px #00ff4488 inset;
-  animation:pulse 2s infinite alternate;
-  z-index:1;
-}
-
-@keyframes pulse {
-  from { transform:scale(0.97); opacity:0.7; }
-  to { transform:scale(1); opacity:1; }
-}
-
-#radarSweep {
-  position:absolute;
-  inset:0;
-  border-radius:50%;
-  background:conic-gradient(rgba(0,255,0,0.25),rgba(0,255,0,0) 30deg);
-  filter:blur(1px);
-  z-index:2;
-}
-
-#radarArc {
-  position:absolute;
-  inset:0;
-  border-radius:50%;
-  box-shadow:0 0 20px #00ff44 inset,0 0 30px #00ff4488 inset;
-  z-index:3;
-}
-
-#arrow {
-  position:absolute;
-  bottom:50%;
-  left:50%;
-  width:4px;
-  height:120px;
-  background:#ff4444;
-  transform-origin:bottom center;
-  transform:translateX(-50%);
-  border-radius:4px;
-  box-shadow:0 0 8px #ff4444,0 0 20px #ff4444aa;
-  z-index:5;
-}
-
-.rock {
-  position:absolute;
-  width:4px;
-  height:4px;
-  border-radius:50%;
-  background:#ffcc00;
-  box-shadow:0 0 6px #ffcc00,0 0 12px #ffcc0055;
-  opacity:0;
-  transition:transform 0.15s linear,opacity 0.4s ease,width 0.3s ease,height 0.3s ease;
-  z-index:7;
-}
-
-#qrOverlay {
-  position:absolute;
-  inset:0;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  color:#ff0;
-  font-weight:bold;
-  font-size:1.1em;
-  text-align:center;
-  z-index:8;
   pointer-events:none;
 }
 
-#videoPreview {
-  display:none;
-  position:absolute;
-  width:360px;
-  height:360px;
+#radarArc{
+  position:absolute;inset:0;
   border-radius:50%;
-  top:0;
-  left:0;
-  object-fit:cover;
-  z-index:0;
+  box-shadow:0 0 18px #00ff55 inset,0 0 30px #00ff5588 inset;
+  pointer-events:none;
 }
 
-#info {
-  width:90%;
-  max-width:360px;
-  margin-top:10px;
+#rings{position:absolute;inset:0;pointer-events:none}
+.ring{
+  position:absolute;
+  border:1px solid #00ff55;
+  border-radius:50%;
+  inset:50%;
+  transform:translate(-50%,-50%);
+  animation:pulse 4s infinite;
+  opacity:.2;
+}
+@keyframes pulse{
+  0%{width:0;height:0}
+  100%{width:360px;height:360px}
 }
 
-.box {
-  border:1px solid #00ff0044;
-  background:#001100aa;
-  padding:6px;
-  margin:4px 0;
-  border-radius:6px;
-  text-align:center;
-}
-
-select,button {
-  margin:8px 0;
-  padding:10px;
-  border-radius:8px;
-  border:none;
-  background:#00ff00;
-  color:#000;
-  font-size:1em;
-}
-
-#scanRock {
+#arrow{
+  position:absolute;
+  left:50%;bottom:50%;
+  width:6px;height:120px;
   background:#ff4444;
-  color:#fff;
-  font-weight:bold;
+  transform-origin:bottom center;
+  box-shadow:0 0 10px #ff4444;
+  z-index:6;
 }
 
-#proximityMeter {
-  width:90%;
-  max-width:360px;
-  height:18px;
+/* Rocks */
+.rock{
+  position:absolute;
+  width:6px;height:6px;
+  border-radius:50%;
+  background:#ff0;
+  box-shadow:0 0 6px #ff0;
+  opacity:.8;
+  z-index:2; /* behind UI */
+}
+
+/* QR */
+#qrVideo{display:none;position:absolute;inset:0;object-fit:cover}
+#qrPanel{
+  position:absolute;
+  bottom:8px;left:50%;
+  transform:translateX(-50%);
+  width:320px;height:180px;
+  background:#002200cc;
+  border:2px solid #00ff55;
   border-radius:10px;
-  overflow:hidden;
-  border:1px solid #00ff44;
-  background:#003322;
+  display:none;
+  z-index:10;
 }
-#proximityFill {
-  height:100%;
-  width:0%;
-  background:#ff4444;
-  transition:width 0.3s ease;
+#qrPanel iframe{width:100%;height:100%;border:none}
+
+button{
+  margin:8px;
+  padding:12px 20px;
+  border:none;border-radius:8px;
+  background:#00ff55;
+  font-weight:bold;
 }
 </style>
 </head>
 
 <body>
-<h1>Futuristic Prospecting Scanner</h1>
+<h1>Prospecting Scanner</h1>
 
-<select id="locationSelect">
-  <option>Loading locations…</option>
-</select>
+<select id="locationSelect"></select>
 
 <div id="deviceFrame">
-  <div id="scanner-container">
-    <video id="videoPreview" autoplay></video>
-    <div id="overlayPulse"></div>
+  <div id="scanner">
+    <video id="qrVideo" playsinline></video>
     <div id="radarSweep"></div>
     <div id="radarArc"></div>
+    <div id="rings"></div>
     <div id="arrow"></div>
-    <div id="qrOverlay">QR: —</div>
+    <div id="qrPanel"><iframe></iframe></div>
   </div>
+  <div id="mapView"><iframe></iframe></div>
 </div>
 
-<div id="info">
-  <div class="box" id="gps">GPS: —</div>
-  <div class="box" id="target">Target: —</div>
-  <div class="box" id="distance">Distance: —</div>
-  <div class="box" id="compass">Compass: —</div>
-  <div class="box" id="accuracy">Accuracy: —</div>
-</div>
+<button id="toggleScanner">Activate Scanner</button>
+<button id="scanQR">Scan Rock QR</button>
 
-<div id="proximityMeter"><div id="proximityFill"></div></div>
-<button id="scanRock">SCAN ROCK</button>
-
-<script src="https://cdn.jsdelivr.net/npm/jsqr/dist/jsQR.js"></script>
 <script src="locations.js"></script>
+<script src="https://unpkg.com/jsqr/dist/jsQR.js"></script>
 
 <script>
-/* ========= SAFE LOCATION LOADER ========= */
-const FALLBACK_LOCATIONS = [
-  { name:"Test Zone Alpha", lat:-26.6415, lng:152.9112 },
-  { name:"Test Zone Bravo", lat:-26.6422, lng:152.9120 }
-];
-function getLocations() {
-  if (Array.isArray(window.PROSPECTING_LOCATIONS) && window.PROSPECTING_LOCATIONS.length) {
-    return window.PROSPECTING_LOCATIONS;
-  }
-  console.warn("Using fallback locations");
-  return FALLBACK_LOCATIONS;
+function waitForLocations(cb){
+  if(window.PROSPECTING_LOCATIONS) cb();
+  else setTimeout(()=>waitForLocations(cb),50);
 }
+waitForLocations(init);
 
-/* ========= CORE SYSTEM ========= */
-let LOCATIONS, targetIndex=0, currentLat=null, currentLon=null, heading=0, rocks=[];
-const MAX_VIS=25, RADAR_R=160;
-const scanner=document.getElementById("scanner-container");
-const arrow=document.getElementById("arrow");
-const sweep=document.getElementById("radarSweep");
-const select=document.getElementById("locationSelect");
-const fill=document.getElementById("proximityFill");
-const video=document.getElementById("videoPreview");
-const qrOverlay=document.getElementById("qrOverlay");
+function init(){
+  let active=false,lat=null,lng=null,heading=0,lastBuzz=0;
+  let targetIndex=0,rocks=[];
+  const scanner=document.getElementById("scanner");
+  const mapView=document.getElementById("mapView");
+  const mapFrame=mapView.querySelector("iframe");
+  const arrow=document.getElementById("arrow");
+  const sweep=document.getElementById("radarSweep");
 
-function spawnRocks(){
-  rocks.forEach(r=>r.el.remove());
-  rocks=[];
-  const t=LOCATIONS[targetIndex];
-  for(let i=0;i<6;i++){
-    const el=document.createElement("div");
-    el.className="rock";
-    scanner.appendChild(el);
-    rocks.push({el, lat:t.lat+(Math.random()-0.5)*0.00004, lng:t.lng+(Math.random()-0.5)*0.00004});
-  }
-}
-
-function hav(a,b,c,d){
-  const R=6371000;
-  const dLat=(c-a)*Math.PI/180;
-  const dLon=(d-b)*Math.PI/180;
-  const x=Math.sin(dLat/2)**2 + Math.cos(a*Math.PI/180)*Math.cos(c*Math.PI/180)*Math.sin(dLon/2)**2;
-  return R*2*Math.atan2(Math.sqrt(x), Math.sqrt(1-x));
-}
-
-function updateRocks(){
-  if(currentLat===null) return;
-  rocks.forEach(r=>{
-    const d=hav(currentLat,currentLon,r.lat,r.lng);
-    if(d>MAX_VIS){ r.el.style.opacity=0; return; }
-    const scale=(MAX_VIS-d)/MAX_VIS;
-    const dx=(r.lng-currentLon)*90000;
-    const dy=(r.lat-currentLat)*111000;
-    const x=180 + dx/MAX_VIS*RADAR_R;
-    const y=180 - dy/MAX_VIS*RADAR_R;
-    r.el.style.transform=`translate(${x}px,${y}px)`;
-    r.el.style.width=r.el.style.height=(4+scale*10)+"px";
-    r.el.style.opacity=scale;
+  const select=document.getElementById("locationSelect");
+  PROSPECTING_LOCATIONS.forEach((l,i)=>{
+    const o=document.createElement("option");
+    o.value=i;o.textContent=l.name;
+    select.appendChild(o);
   });
-}
+  select.onchange=()=>targetIndex=select.value;
 
-function animate(){
-  sweep.style.transform=`rotate(${Date.now()/25%360}deg)`;
-  updateRocks();
-  requestAnimationFrame(animate);
-}
-
-function startGPS(){
-  navigator.geolocation.watchPosition(p=>{
-    currentLat=p.coords.latitude;
-    currentLon=p.coords.longitude;
-    const t=LOCATIONS[targetIndex];
-    const d=hav(currentLat,currentLon,t.lat,t.lng);
-    document.getElementById("gps").textContent=`${currentLat.toFixed(6)}, ${currentLon.toFixed(6)}`;
-    document.getElementById("accuracy").textContent=`Accuracy ±${p.coords.accuracy.toFixed(1)}m`;
-    document.getElementById("distance").textContent=`Distance: ${d.toFixed(1)}m`;
-    document.getElementById("target").textContent=`Target: ${t.name}`;
-    fill.style.width=Math.max(0,Math.min(100,(1-d/40)*100))+"%";
-    if(d<6 && navigator.vibrate) navigator.vibrate([80,40,80]);
-  },console.error,{enableHighAccuracy:true});
-}
-
-window.addEventListener("deviceorientation",e=>{
-  if(e.alpha!=null){
-    heading=360-e.alpha;
-    arrow.style.transform=`translateX(-50%) rotate(${heading}deg)`;
-    document.getElementById("compass").textContent=`Compass: ${heading.toFixed(0)}°`;
+  function dist(a,b,c,d){
+    const R=6371000;
+    const dLat=(c-a)*Math.PI/180;
+    const dLon=(d-b)*Math.PI/180;
+    const x=Math.sin(dLat/2)**2+
+      Math.cos(a*Math.PI/180)*Math.cos(c*Math.PI/180)*
+      Math.sin(dLon/2)**2;
+    return R*2*Math.atan2(Math.sqrt(x),Math.sqrt(1-x));
   }
-});
 
-/* ========= QR SCANNER ========= */
-document.getElementById("scanRock").addEventListener("click", async ()=>{
-  qrOverlay.textContent="Scanning...";
-  try {
-    const stream = await navigator.mediaDevices.getUserMedia({video:{facingMode:"environment"}});
-    video.srcObject = stream;
+  function spawnRocks(){
+    rocks.forEach(r=>r.remove());
+    rocks=[];
+    for(let i=0;i<8;i++){
+      const r=document.createElement("div");
+      r.className="rock";
+      r.dataset.angle=Math.random()*Math.PI*2;
+      scanner.appendChild(r);
+      rocks.push(r);
+    }
+  }
+
+  function updateRocks(distance){
+    rocks.forEach(r=>{
+      const rad=Math.min(170,Math.max(20,distance));
+      const x=180+Math.cos(r.dataset.angle-heading*Math.PI/180)*rad;
+      const y=180+Math.sin(r.dataset.angle-heading*Math.PI/180)*rad;
+      r.style.left=x+"px";
+      r.style.top=y+"px";
+      r.style.opacity=distance<150?1:0.6;
+    });
+  }
+
+  function vibrate(distance){
+    if(distance<6 && Date.now()-lastBuzz>2000){
+      navigator.vibrate(80);
+      lastBuzz=Date.now();
+    }
+  }
+
+  function update(){
+    if(!active||lat==null) return;
+    const t=PROSPECTING_LOCATIONS[targetIndex];
+    const distance=dist(lat,lng,t.lat,t.lng);
+
+    // Map switch
+    if(distance>100){
+      scanner.style.display="none";
+      mapView.style.display="block";
+      mapFrame.src=`https://www.google.com/maps?q=${t.lat},${t.lng}&output=embed`;
+    }else{
+      scanner.style.display="block";
+      mapView.style.display="none";
+    }
+
+    arrow.style.transform=`translateX(-50%) rotate(${360-heading}deg)`;
+    updateRocks(distance);
+    vibrate(distance);
+
+    // HUD display
+    if(!document.getElementById('hud')){
+      const hud=document.createElement('div');
+      hud.id='hud';
+      hud.style.position='absolute';
+      hud.style.top='10px';
+      hud.style.left='10px';
+      hud.style.color='#0f0';
+      hud.style.zIndex=10;
+      hud.style.fontSize='12px';
+      scanner.appendChild(hud);
+    }
+    document.getElementById('hud').innerHTML=
+      `Target: ${t.name}<br>Distance: ${distance.toFixed(1)} m`;
+  }
+
+  navigator.geolocation.watchPosition(p=>{
+    lat=p.coords.latitude;
+    lng=p.coords.longitude;
+    update();
+  },null,{enableHighAccuracy:true});
+
+  window.addEventListener("deviceorientation",e=>{
+    if(e.alpha!=null) heading=360-e.alpha;
+  });
+
+  document.getElementById("toggleScanner").onclick=()=>{
+    active=!active;
+    document.getElementById("toggleScanner").textContent=
+      active?"Deactivate Scanner":"Activate Scanner";
+    if(active){
+      spawnRocks();
+      (function spin(){
+        if(!active) return;
+        sweep.style.transform=`rotate(${Date.now()/20}deg)`;
+        requestAnimationFrame(spin);
+      })();
+    }
+  };
+
+  document.getElementById("scanQR").onclick=async()=>{
+    const video=document.getElementById("qrVideo");
+    const panel=document.getElementById("qrPanel");
+    const frame=panel.querySelector("iframe");
     video.style.display="block";
-
-    const canvas=document.createElement("canvas");
-    const ctx=canvas.getContext("2d");
-
-    function scanFrame(){
+    const stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:"environment"}});
+    video.srcObject=stream;video.play();
+    const c=document.createElement("canvas"),ctx=c.getContext("2d");
+    (function scan(){
       if(video.readyState===video.HAVE_ENOUGH_DATA){
-        canvas.width = video.videoWidth;
-        canvas.height = video.videoHeight;
-        ctx.drawImage(video,0,0,canvas.width,canvas.height);
-        const imgData = ctx.getImageData(0,0,canvas.width,canvas.height);
-        const code = jsQR(imgData.data,imgData.width,imgData.height);
+        c.width=video.videoWidth;c.height=video.videoHeight;
+        ctx.drawImage(video,0,0);
+        const img=ctx.getImageData(0,0,c.width,c.height);
+        const code=jsQR(img.data,c.width,c.height);
         if(code){
-          qrOverlay.textContent=`QR FOUND: ${code.data}`;
           stream.getTracks().forEach(t=>t.stop());
-          video.style.display="none";
+          panel.style.display="block";
+          frame.src=`https://www.challengeaccepted.quest/prospect-scan?rock=${code.data}`;
           return;
         }
       }
-      requestAnimationFrame(scanFrame);
-    }
-    scanFrame();
-  } catch(e){
-    qrOverlay.textContent="Camera access denied";
-  }
-});
-
-/* ========= INIT ========= */
-function init(){
-  LOCATIONS=getLocations();
-  select.innerHTML="";
-  LOCATIONS.forEach((l,i)=>{ const o=document.createElement("option"); o.value=i; o.textContent=l.name; select.appendChild(o); });
-  select.onchange = ()=>{ targetIndex=+select.value; spawnRocks(); };
-  spawnRocks();
-  startGPS();
-  animate();
+      requestAnimationFrame(scan);
+    })();
+  };
 }
-init();
 </script>
 </body>
 </html>
