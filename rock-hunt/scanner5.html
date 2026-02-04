@@ -15,10 +15,7 @@ body{
   align-items:center;
   padding:10px;
 }
-h1{
-  margin:8px;
-  text-shadow:0 0 10px #0f0;
-}
+h1{margin:8px;text-shadow:0 0 10px #0f0}
 
 /* Device */
 #deviceFrame{
@@ -186,7 +183,6 @@ button,select{
 
 <script src="locations.js"></script>
 <script src="https://unpkg.com/jsqr/dist/jsQR.js"></script>
-
 <script>
 let active=false;
 let lat=null,lng=null,heading=0;
@@ -289,13 +285,15 @@ function animateSweep(){
 }
 
 // GPS
-gpsWatch=navigator.geolocation.watchPosition(p=>{
-  lat=p.coords.latitude;
-  lng=p.coords.longitude;
-  document.getElementById("gps").textContent=`GPS: ${lat.toFixed(6)}, ${lng.toFixed(6)}`;
-  document.getElementById("accuracy").textContent=`Accuracy: ±${p.coords.accuracy.toFixed(1)} m`;
-  update();
-},{enableHighAccuracy:true});
+if(navigator.geolocation){
+  gpsWatch=navigator.geolocation.watchPosition(p=>{
+    lat=p.coords.latitude;
+    lng=p.coords.longitude;
+    document.getElementById("gps").textContent=`GPS: ${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+    document.getElementById("accuracy").textContent=`Accuracy: ±${p.coords.accuracy.toFixed(1)} m`;
+    update();
+  },err=>alert("GPS error: "+err.message),{enableHighAccuracy:true});
+}
 
 // Compass
 window.addEventListener("deviceorientation",e=>{
