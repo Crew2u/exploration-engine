@@ -4,131 +4,164 @@
 <meta charset="UTF-8">
 <title>Futuristic Prospecting Scanner</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+
 <style>
-body { 
-  margin:0; font-family:system-ui,sans-serif; background:#000; color:#0f0;
-  display:flex; flex-direction:column; align-items:center; justify-content:flex-start; padding:10px;
+body{
+  margin:0;
+  background:#000;
+  color:#0f0;
+  font-family:system-ui,sans-serif;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  padding:10px;
 }
-h1 { 
-  margin:10px 0; text-align:center; text-shadow:0 0 10px #0f0, 0 0 20px #0f0555; 
+h1{
+  margin:8px;
+  text-shadow:0 0 10px #0f0;
 }
 
-#deviceFrame { 
-  width:400px; height:400px; border:10px solid #00ff44; border-radius:30px;
-  box-shadow:0 0 50px #00ff44 inset; display:flex; align-items:center; justify-content:center; position:relative;
+/* Device */
+#deviceFrame{
+  width:400px;height:400px;
+  border:10px solid #00ff44;
+  border-radius:30px;
+  box-shadow:0 0 50px #00ff44 inset;
   background:#001100;
+  position:relative;
+  display:flex;
+  justify-content:center;
+  align-items:center;
 }
 
-#scanner-container { 
-  width:360px; height:360px; border-radius:50%; position:relative; overflow:hidden;
-  background:radial-gradient(circle at center, #001100 0%, #002200 80%);
-  box-shadow: inset 0 0 30px #00ff0044, 0 0 40px #00ff0088;
+#scanner{
+  width:360px;height:360px;
+  border-radius:50%;
+  position:relative;
+  overflow:hidden;
+  background:radial-gradient(circle,#001100 0%,#002200 80%);
   border:3px solid #00ff00;
 }
 
-#radarSweep { 
-  position:absolute; inset:0; border-radius:50%;
-  background:conic-gradient(rgba(0,255,0,0.25) 0deg, rgba(0,255,0,0) 25deg);
-  pointer-events:none; z-index:2;
-}
-
-#radarArc { 
-  position:absolute; inset:0; border-radius:50%;
-  box-shadow:0 0 20px #00ff44 inset, 0 0 30px #00ff4488 inset;
-  z-index:3; pointer-events:none;
-}
-
-#radarRings { position:absolute; inset:0; border-radius:50%; z-index:1; pointer-events:none; }
-
-.ring {
-  position:absolute; border:1px solid #00ff22; border-radius:50%;
-  top:50%; left:50%; transform:translate(-50%,-50%);
-  animation:ringPulse 4s infinite; opacity:0.25;
-}
-
-@keyframes ringPulse {
-  0% { width:0; height:0; opacity:0.2; }
-  100% { width:300px; height:300px; opacity:0; }
-}
-
-#arrow {
-  position:absolute; bottom:50%; left:50%;
-  width:6px; height:120px; background:#ff4444;
-  transform-origin:bottom center; border-radius:4px;
-  z-index:5;
-}
-
-/* FIX: rocks smaller + behind HUD text */
-.rock {
-  position:absolute;
-  width:12px; height:12px;
+/* Radar */
+#radarSweep{
+  position:absolute;inset:0;
+  background:conic-gradient(rgba(0,255,0,.25),transparent 25deg);
   border-radius:50%;
-  z-index:2; /* below arrow & HUD */
-  box-shadow:0 0 6px #ffff00;
+  pointer-events:none;
 }
-
-#qrVideo {
-  display:none; position:absolute; inset:0;
-  border-radius:50%; object-fit:cover; z-index:4;
+#radarArc{
+  position:absolute;inset:0;
+  border-radius:50%;
+  box-shadow:0 0 20px #00ff44 inset,0 0 30px #00ff4488 inset;
+  pointer-events:none;
 }
-
-#qrOverlay {
-  position:absolute; inset:0; border-radius:50%;
-  z-index:6; pointer-events:none;
-  box-shadow:0 0 30px #0f0 inset;
-}
-
-#qrPanel {
+#radarRings{position:absolute;inset:0;pointer-events:none}
+.ring{
   position:absolute;
-  width:320px; height:180px;
-  bottom:10px; left:50%; transform:translateX(-50%);
-  border:3px solid #00ff44; border-radius:12px;
-  background:#002200cc;
-  display:none; z-index:10;
+  border:1px solid #00ff22;
+  border-radius:50%;
+  top:50%;left:50%;
+  transform:translate(-50%,-50%);
+  animation:pulse 4s infinite;
+  opacity:.25;
 }
-#qrPanel iframe { width:100%; height:100%; border:none; }
-
-#info { width:90%; max-width:360px; text-align:center; }
-.box {
-  border:1px solid #00ff0044;
-  background:#001100aa;
-  margin:4px 0; padding:6px; border-radius:6px;
+@keyframes pulse{
+  0%{width:0;height:0}
+  100%{width:300px;height:300px;opacity:0}
 }
 
-button, select {
-  margin:10px 0; padding:12px 22px;
-  border-radius:8px; border:none;
-  background:#00ff00; color:#000;
-  font-size:1em;
-}
-
-#scanRock { background:#ff4444; color:#fff; font-weight:bold; }
-
-#proximityMeter {
-  width:90%; max-width:360px;
-  height:20px; border-radius:10px;
-  background:#003311; border:1px solid #00ff44;
-}
-#proximityFill {
-  height:100%; width:0%;
+/* Arrow */
+#arrow{
+  position:absolute;
+  left:50%;bottom:50%;
+  width:6px;height:120px;
   background:#ff4444;
+  transform-origin:bottom center;
+  box-shadow:0 0 10px #ff4444;
+  z-index:6;
 }
+
+/* Rocks */
+.rock{
+  position:absolute;
+  width:12px;height:12px;
+  border-radius:50%;
+  background:#ff0;
+  box-shadow:0 0 6px #ff0;
+  z-index:2;
+}
+
+/* QR */
+#qrVideo{
+  display:none;
+  position:absolute;
+  inset:0;
+  object-fit:cover;
+  border-radius:50%;
+  z-index:4;
+}
+#qrPanel{
+  position:absolute;
+  bottom:8px;left:50%;
+  transform:translateX(-50%);
+  width:320px;height:180px;
+  background:#002200cc;
+  border:2px solid #00ff55;
+  border-radius:10px;
+  display:none;
+  z-index:10;
+}
+#qrPanel iframe{width:100%;height:100%;border:none}
+
+/* HUD */
+#info{width:90%;max-width:360px;text-align:center}
+.box{
+  border:1px solid #00ff0044;
+  background:#00110099;
+  padding:6px;
+  margin:4px 0;
+  border-radius:6px;
+}
+
+#proximityMeter{
+  width:90%;max-width:360px;
+  height:20px;
+  border-radius:10px;
+  background:#003311;
+  border:1px solid #00ff44;
+}
+#proximityFill{
+  height:100%;
+  width:0%;
+  background:#ff4444;
+  transition:width .2s;
+}
+
+button,select{
+  margin:8px;
+  padding:12px 20px;
+  border:none;border-radius:8px;
+  background:#00ff55;
+  font-weight:bold;
+}
+#toggleCamera{background:#ffaa00}
+#scanQR{background:#ff4444;color:#fff}
 </style>
 </head>
 
 <body>
-<h1>Futuristic Prospecting Scanner</h1>
+<h1>Prospecting Scanner</h1>
 
 <select id="locationSelect"></select>
 
 <div id="deviceFrame">
-  <div id="scanner-container">
-    <video id="qrVideo" autoplay playsinline></video>
+  <div id="scanner">
+    <video id="qrVideo" playsinline></video>
     <div id="radarSweep"></div>
     <div id="radarArc"></div>
     <div id="radarRings"></div>
     <div id="arrow"></div>
-    <div id="qrOverlay"></div>
     <div id="qrPanel"><iframe></iframe></div>
   </div>
 </div>
@@ -145,57 +178,60 @@ button, select {
 
 <div id="proximityMeter"><div id="proximityFill"></div></div>
 
-<button id="start">Activate Scanner</button>
-<button id="scanRock">Start QR Scanner</button>
+<button id="toggleScanner">Activate Scanner</button>
+<button id="scanQR">Scan Rock QR</button>
+<button id="toggleCamera">Toggle Camera</button>
 
 <script src="locations.js"></script>
 <script src="https://unpkg.com/jsqr/dist/jsQR.js"></script>
 
 <script>
-/* =========================
-   ORIGINAL LOGIC PRESERVED
-   ========================= */
+let active=false;
+let lat=null,lng=null,heading=0;
+let targetIndex=0;
+let rocks=[];
+let sweepAngle=0;
+let gpsWatch=null;
+let camStream=null;
+let cameraOn=false;
 
-let TARGET_INDEX = 0;
-let currentLat = null, currentLon = null, compassHeading = null;
-let scannerActive = false, qrActive = false;
-let gpsWatcher = null, cameraStream = null;
-let rocks = [], sweepAngle = 0;
+const arrow=document.getElementById("arrow");
+const sweep=document.getElementById("radarSweep");
+const scanner=document.getElementById("scanner");
+const qrVideo=document.getElementById("qrVideo");
+const qrPanel=document.getElementById("qrPanel");
+const qrFrame=qrPanel.querySelector("iframe");
+const proximityFill=document.getElementById("proximityFill");
 
-const select = document.getElementById("locationSelect");
-const scanner = document.getElementById("scanner-container");
-const arrow = document.getElementById("arrow");
-const radarSweep = document.getElementById("radarSweep");
-const proximityFill = document.getElementById("proximityFill");
-const qrVideo = document.getElementById("qrVideo");
-const qrPanel = document.getElementById("qrPanel");
-const qrIframe = qrPanel.querySelector("iframe");
-const startBtn = document.getElementById("start");
-
+const select=document.getElementById("locationSelect");
 PROSPECTING_LOCATIONS.forEach((l,i)=>{
   const o=document.createElement("option");
-  o.value=i; o.textContent=l.name;
+  o.value=i;o.textContent=l.name;
   select.appendChild(o);
 });
 
-function toRad(d){return d*Math.PI/180;}
-function toDeg(r){return (r*180/Math.PI+360)%360;}
+select.onchange=()=>{
+  targetIndex=parseInt(select.value);
+  spawnRocks();
+  update(); // ✅ force recalculation immediately
+};
 
-function haversine(a,b,c,d){
+function dist(a,b,c,d){
   const R=6371000;
-  const dLat=toRad(c-a), dLon=toRad(d-b);
-  return R*2*Math.asin(Math.sqrt(
-    Math.sin(dLat/2)**2 +
-    Math.cos(toRad(a))*Math.cos(toRad(c))*Math.sin(dLon/2)**2
-  ));
+  const dLat=(c-a)*Math.PI/180;
+  const dLon=(d-b)*Math.PI/180;
+  const x=Math.sin(dLat/2)**2+
+    Math.cos(a*Math.PI/180)*Math.cos(c*Math.PI/180)*
+    Math.sin(dLon/2)**2;
+  return R*2*Math.atan2(Math.sqrt(x),Math.sqrt(1-x));
 }
 
 function bearing(a,b,c,d){
-  return toDeg(Math.atan2(
-    Math.sin(toRad(d-b))*Math.cos(toRad(c)),
-    Math.cos(toRad(a))*Math.sin(toRad(c)) -
-    Math.sin(toRad(a))*Math.cos(toRad(c))*Math.cos(toRad(d-b))
-  ));
+  return (Math.atan2(
+    Math.sin((d-b)*Math.PI/180)*Math.cos(c*Math.PI/180),
+    Math.cos(a*Math.PI/180)*Math.sin(c*Math.PI/180)-
+    Math.sin(a*Math.PI/180)*Math.cos(c*Math.PI/180)*Math.cos((d-b)*Math.PI/180)
+  )*180/Math.PI+360)%360;
 }
 
 function spawnRocks(){
@@ -204,7 +240,6 @@ function spawnRocks(){
   for(let i=0;i<8;i++){
     const r=document.createElement("div");
     r.className="rock";
-    r.style.background="#ffff00";
     r.dataset.angle=Math.random()*Math.PI*2;
     scanner.appendChild(r);
     rocks.push(r);
@@ -212,75 +247,83 @@ function spawnRocks(){
 }
 
 function update(){
-  if(currentLat==null||compassHeading==null) return;
-  const t=PROSPECTING_LOCATIONS[TARGET_INDEX];
-  const d=haversine(currentLat,currentLon,t.lat,t.lng);
-  const b=bearing(currentLat,currentLon,t.lat,t.lng);
-  arrow.style.transform=`translateX(-50%) rotate(${(b-compassHeading+360)%360}deg)`;
+  if(!active||lat==null) return;
+  const t=PROSPECTING_LOCATIONS[targetIndex];
+  const d=dist(lat,lng,t.lat,t.lng);
+  const b=bearing(lat,lng,t.lat,t.lng);
+  const rel=(b-heading+360)%360;
 
-  document.getElementById("distance").textContent=`Distance: ${d.toFixed(1)} m`;
+  arrow.style.transform=`translateX(-50%) rotate(${rel}deg)`;
+
   document.getElementById("target").textContent=`Target: ${t.name}`;
-  proximityFill.style.width=Math.min(100,200/d*100)+"%";
+  document.getElementById("distance").textContent=`Distance: ${d.toFixed(1)} m`;
+  document.getElementById("bearing").textContent=`Bearing: ${b.toFixed(1)}°`;
+  document.getElementById("compass").textContent=`Compass: ${heading.toFixed(1)}°`;
+
+  proximityFill.style.width=`${Math.min(1,200/d)*100}%`;
 
   rocks.forEach(r=>{
     const radius=Math.min(160,d);
-    const x=180+Math.cos(r.dataset.angle-compassHeading*Math.PI/180)*radius;
-    const y=180+Math.sin(r.dataset.angle-compassHeading*Math.PI/180)*radius;
+    const x=180+Math.cos(r.dataset.angle-heading*Math.PI/180)*radius;
+    const y=180+Math.sin(r.dataset.angle-heading*Math.PI/180)*radius;
     r.style.transform=`translate(${x}px,${y}px)`;
-    if(d<3 && Math.random()<0.02 && navigator.vibrate) navigator.vibrate(80);
+    if(d<5 && Math.random()<0.03 && navigator.vibrate) navigator.vibrate(80);
   });
 }
 
 function animate(){
-  if(!scannerActive) return;
+  if(!active) return;
   sweepAngle=(sweepAngle+2)%360;
-  radarSweep.style.transform=`rotate(${sweepAngle}deg)`;
+  sweep.style.transform=`rotate(${sweepAngle}deg)`;
   requestAnimationFrame(animate);
 }
 
-document.getElementById("start").onclick=async()=>{
-  scannerActive=!scannerActive;
-  startBtn.textContent=scannerActive?"Deactivate Scanner":"Activate Scanner";
-  if(scannerActive){
-    spawnRocks(); animate();
-    gpsWatcher=navigator.geolocation.watchPosition(p=>{
-      currentLat=p.coords.latitude;
-      currentLon=p.coords.longitude;
-      update();
-    });
-    window.addEventListener("deviceorientation",e=>{
-      if(e.alpha!=null){ compassHeading=360-e.alpha; update(); }
-    });
-  } else {
-    navigator.geolocation.clearWatch(gpsWatcher);
+navigator.geolocation.watchPosition(p=>{
+  lat=p.coords.latitude;
+  lng=p.coords.longitude;
+  document.getElementById("gps").textContent=`GPS: ${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+  document.getElementById("accuracy").textContent=`Accuracy: ±${p.coords.accuracy.toFixed(1)} m`;
+  update();
+},{enableHighAccuracy:true});
+
+window.addEventListener("deviceorientation",e=>{
+  if(e.alpha!=null){ heading=360-e.alpha; update(); }
+});
+
+document.getElementById("toggleScanner").onclick=()=>{
+  active=!active;
+  if(active){ spawnRocks(); animate(); }
+};
+
+document.getElementById("toggleCamera").onclick=async()=>{
+  if(cameraOn){
+    camStream.getTracks().forEach(t=>t.stop());
+    qrVideo.style.display="none";
+    cameraOn=false;
+  }else{
+    camStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:"environment"}});
+    qrVideo.srcObject=camStream;
+    qrVideo.play();
+    qrVideo.style.display="block";
+    cameraOn=true;
   }
 };
 
-document.getElementById("scanRock").onclick=async()=>{
-  if(qrActive) return;
-  qrActive=true;
-  qrVideo.style.display="block";
-  cameraStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:"environment"}});
-  qrVideo.srcObject=cameraStream;
-
+document.getElementById("scanQR").onclick=()=>{
+  if(!cameraOn) return;
   const canvas=document.createElement("canvas");
   const ctx=canvas.getContext("2d");
-
   function scan(){
-    if(!qrActive) return;
-    if(qrVideo.readyState===qrVideo.HAVE_ENOUGH_DATA){
-      canvas.width=qrVideo.videoWidth;
-      canvas.height=qrVideo.videoHeight;
-      ctx.drawImage(qrVideo,0,0);
-      const img=ctx.getImageData(0,0,canvas.width,canvas.height);
-      const code=jsQR(img.data,canvas.width,canvas.height);
-      if(code){
-        qrIframe.src=code.data;
-        qrPanel.style.display="block";
-        qrActive=false;
-        cameraStream.getTracks().forEach(t=>t.stop());
-        return;
-      }
+    if(!cameraOn) return;
+    canvas.width=qrVideo.videoWidth;
+    canvas.height=qrVideo.videoHeight;
+    ctx.drawImage(qrVideo,0,0);
+    const img=ctx.getImageData(0,0,canvas.width,canvas.height);
+    const code=jsQR(img.data,canvas.width,canvas.height);
+    if(code){
+      qrFrame.src=code.data;
+      qrPanel.style.display="block";
+      return;
     }
     requestAnimationFrame(scan);
   }
