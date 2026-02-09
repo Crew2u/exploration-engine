@@ -9,21 +9,21 @@ window.PROSPECTING_LOCATIONS = [
     rarities: ["common","common","rare","common","epic","common"]
   },
   { 
-    name: "Test Zone Bravo", 
-    lat: -26.6422, 
-    lng: 152.9120,
+    name: "Test Zone Lions Park", 
+    lat: -26.413040, 
+    lng: 152.930348,
     rarities: ["common","rare","common","common","common","epic"]
   },
   { 
-    name: "Rocky Ridge", 
-    lat: -26.6430, 
-    lng: 152.9135,
+    name: "Lions Park2", 
+    lat: -26.412832,
+    lng: 152.933928.
     rarities: ["common","common","common","rare","common","epic"]
   },
   { 
-    name: "Hidden Creek", 
-    lat: -26.6400, 
-    lng: 152.9100,
+    name: "Fire Station Cooran", 
+    lat: -26.336766,
+    lng: 152.833614,
     rarities: ["common","common","common","common","rare","common"]
   },
   { 
