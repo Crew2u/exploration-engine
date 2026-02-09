@@ -17,7 +17,7 @@ window.PROSPECTING_LOCATIONS = [
   { 
     name: "Lions Park2", 
     lat: -26.412832,
-    lng: 152.933928.
+    lng: 152.933928,
     rarities: ["common","common","common","rare","common","epic"]
   },
   { 
